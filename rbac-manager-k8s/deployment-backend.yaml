@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rbac-manager-backend
+  namespace: rbac-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rbac-backend
+  template:
+    metadata:
+      labels:
+        app: rbac-backend
+    spec:
+      volumes:
+        - name: rbac-data-storage
+          persistentVolumeClaim:
+            claimName: rbac-manager-pvc
+      # ------------------------
+      serviceAccountName: rbac-manager-serviceaccount
+      
+      imagePullSecrets:
+      - name: harbor-credentials      
+      
+      containers:
+      - name: rbac-manager-backend
+        image: registry.nuamexchange.com/transversal-nuam/rbac-manager-backend:0.0.1-alpha.1
+        imagePullPolicy: Always
+        env:  
+          - name: RBAC_DB_SQLITE3_PATH
+            valueFrom: 
+              configMapKeyRef:
+                name: env-configmap
+                key: RBAC_DB_SQLITE3_PATH
+          - name: RBAC_STATIC_FRONTEND_DIR
+            valueFrom: 
+              configMapKeyRef:
+                name: env-configmap
+                key: RBAC_STATIC_FRONTEND_DIR
+          - name: RBAC_CLUSTER_NAME
+            valueFrom: 
+              configMapKeyRef:
+                name: env-configmap
+                key: RBAC_CLUSTER_NAME
+          - name: RBAC_CLUSTER_URL
+            valueFrom: 
+              configMapKeyRef:
+                name: env-configmap
+                key: RBAC_CLUSTER_URL
+          - name: RBAC_CLUSTER_CA_CRT_PATH
+            valueFrom: 
+              configMapKeyRef:
+                name: env-configmap
+                key: RBAC_CLUSTER_CA_CRT_PATH
+        
+        volumeMounts:
+          - name: rbac-data-storage
+            mountPath: /opt/rbac-manager/data

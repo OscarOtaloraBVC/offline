@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rbac-manager-frontend
+  namespace: rbac-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rbac-frontend
+  template:
+    metadata:
+      labels:
+        app: rbac-frontend
+    spec:
+
+      imagePullSecrets:
+      - name: harbor-credentials
+
+      containers:
+      - name: rbac-manager-frontend
+        image: registry.nuamexchange.com/transversal-nuam/rbac-manager-frontend:0.0.1-alpha.1 
+        ports:
+          - containerPort: 80
