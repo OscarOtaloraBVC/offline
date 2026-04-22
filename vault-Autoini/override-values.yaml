@@ -1,0 +1,56 @@
+ui:
+  enabled: true
+  serviceType: LoadBalancer
+  serviceNodePort: null
+  externalPort: 8200
+
+server:
+  dataStorage:
+    enabled: true
+    size: 10Gi
+    storageClass: default
+
+  ha:
+    enabled: true
+    replicas: 2
+    raft:
+      enabled: false
+      config: ""
+
+  extraEnvironmentVars:
+    VAULT_ADDR: http://127.0.0.1:8200
+    VAULT_API_ADDR: http://vault.vault.svc.cluster.local:8200
+
+  # Configuración de base de datos con CloudNativePG
+  extraVolumes:
+    - type: secret
+      name: vault-db-secret
+
+  # Configuración de autenticación Kubernetes
+  extraArgs: |
+    - -config=/vault/config/vault-config.hcl
+
+
+  postStart:
+    - |
+      cat <<EOF > /vault/config/vault-config.hcl
+      storage "postgresql" {
+        connection_url = "postgresql://vault:vaultpassword123@vault-postgres-rw.vault.svc.cluster.local:5432/vault?sslmode=disable"
+      }
+
+      listener "tcp" {
+        address = "0.0.0.0:8200"
+        tls_disable = 1
+      }
+
+      # Configuración para Kubernetes Auth
+      seal "transit" {
+        address = "http://vault.vault.svc.cluster.local:8200"
+        disable_renewal = "false"
+        key_name = "autounseal"
+        mount_path = "transit/"
+        tls_skip_verify = "true"
+      }
+      
+      ui = true
+      EOF

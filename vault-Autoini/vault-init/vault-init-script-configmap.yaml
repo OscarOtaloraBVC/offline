@@ -1,0 +1,66 @@
+# vault-init-script-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-init-script
+  namespace: vault
+data:
+  init-vault.sh: |
+    #!/bin/sh
+    set -e
+    
+    echo "Waiting for Vault to be ready..."
+    until curl -s http://vault.vault.svc.cluster.local:8200/v1/sys/health > /dev/null; do
+      sleep 5
+    done
+    
+    # Check initialization status
+    response=$(curl -s http://vault.vault.svc.cluster.local:8200/v1/sys/health)
+    initialized=$(echo "$response" | jq -r '.initialized')
+    
+    if [ "$initialized" = "false" ]; then
+      echo "Initializing Vault..."
+      init_response=$(curl -s -X PUT http://vault.vault.svc.cluster.local:8200/v1/sys/init -d '{
+        "secret_shares": 1,
+        "secret_threshold": 1
+      }')
+      
+      key=$(echo "$init_response" | jq -r '.keys_base64[0]')
+      root_token=$(echo "$init_response" | jq -r '.root_token')
+      
+      echo "Creating Kubernetes secret with unseal key and root token..."
+      cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: vault-keys
+      namespace: vault
+    type: Opaque
+    data:
+      unseal-key: $(echo -n "$key" | base64 | tr -d '\n')
+      root-token: $(echo -n "$root_token" | base64 | tr -d '\n')
+    EOF
+      
+      echo "Vault initialized successfully"
+    elif [ "$initialized" = "true" ]; then
+      echo "Vault is already initialized"
+      
+      # Check if sealed and unseal if necessary
+      sealed=$(echo "$response" | jq -r '.sealed')
+      if [ "$sealed" = "true" ]; then
+        echo "Vault is sealed, attempting to unseal..."
+        # Get unseal key from secret
+        if kubectl get secret vault-keys -n vault > /dev/null 2>&1; then
+          unseal_key=$(kubectl get secret vault-keys -n vault -o jsonpath='{.data.unseal-key}' | base64 -d)
+          curl -s -X PUT http://vault.vault.svc.cluster.local:8200/v1/sys/unseal -d "{\"key\": \"$unseal_key\"}"
+          echo "Unseal attempt completed"
+        else
+          echo "No unseal keys found in secret"
+        fi
+      else
+        echo "Vault is unsealed and ready"
+      fi
+    else
+      echo "Vault is in recovery mode or other state"
+      exit 1
+    fi

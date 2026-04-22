@@ -1,0 +1,56 @@
+# vault-init-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-init
+  namespace: vault
+  labels:
+    app: vault-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-init
+  template:
+    metadata:
+      labels:
+        app: vault-init
+    spec:
+      serviceAccountName: vault-init
+      containers:
+      - name: vault-init
+        image: ghcr.io/jace-ys/vault-init:latest
+        env:
+        - name: VAULT_INIT_CONFIG
+          value: "/etc/vault-init/config.yaml"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: config
+          mountPath: /etc/vault-init
+          readOnly: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: vault-init-config

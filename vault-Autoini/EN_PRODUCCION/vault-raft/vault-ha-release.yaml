@@ -1,0 +1,141 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault
+  namespace: vault-raft
+spec:
+  interval: 5m
+  releaseName: vault
+  targetNamespace: vault-raft
+
+  chart:
+    spec:
+      chart: vault
+      version: 0.30.0
+      sourceRef:
+        kind: HelmRepository
+        name: hashicorp
+        namespace: vault-raft
+
+  values:
+    global:
+      enabled: true
+
+    ui:
+      enabled: true
+
+    injector:
+      enabled: false
+
+    server:
+      enabled: true
+      image:
+        repository: hashicorp/vault
+        tag: "1.17.3"
+      
+      serviceAccount:
+        create: true
+        name: vault
+
+      # Configuración de seguridad - sin initContainer problemático
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 100
+        fsGroup: 100
+
+      # NO usar extraInitContainers - Vault puede manejar los permisos
+      extraInitContainers: []  # Vacío explícitamente
+
+      # ha:
+      #   enabled: true
+      #   replicas: 3
+      #   raft:
+      #     enabled: true
+      #     setNodeId: true
+      #     config: |
+      #       ui = true
+            
+      #       listener "tcp" {
+      #         tls_disable = 1
+      #         address = "[::]:8200"
+      #         cluster_address = "[::]:8201"
+      #       }
+            
+      #       storage "raft" {
+      #         path = "/vault/data"
+      #       }
+            
+      #       service_registration "kubernetes" {}
+
+      ha:
+        enabled: true
+        replicas: 3
+        raft:
+          enabled: true
+          setNodeId: true
+          config: |
+            ui = true
+            
+            listener "tcp" {
+              tls_disable = 1
+              address = "[::]:8200"
+              cluster_address = "[::]:8201"
+            }
+
+            storage "raft" {
+              path = "/vault/data"
+
+              retry_join {
+                leader_api_addr = "http://vault-0.vault-internal:8200"
+              }
+              retry_join {
+                leader_api_addr = "http://vault-1.vault-internal:8200"
+              }
+              retry_join {
+                leader_api_addr = "http://vault-2.vault-internal:8200"
+              }
+            }
+
+            service_registration "kubernetes" {}
+
+
+      
+
+      # Configuración de almacenamiento - dejar que Vault cree los directorios
+      dataStorage:
+        enabled: true
+        size: 1Gi
+        storageClass: local-path
+        mountPath: /vault/data
+
+      # Probes
+      readinessProbe:
+        enabled: true
+        path: "/v1/sys/health?standbyok=true"
+        port: 8200
+        initialDelaySeconds: 10
+        periodSeconds: 10
+
+      livenessProbe:
+        enabled: true
+        path: "/v1/sys/health?standbyok=true"
+        port: 8200
+        initialDelaySeconds: 30
+        periodSeconds: 10
+
+      # Recursos
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "250m"
+        limits:
+          memory: "512Mi"
+          cpu: "500m"
+
+    service:
+      enabled: true
+      type: NodePort
+      nodePort: 30200
+      port: 8200
+      targetPort: 8200

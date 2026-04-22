@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vault-ingress
+  namespace: vault
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http(s)://*.nuamx.com"
+    #nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    #nginx.ingress.kubernetes.io/cors-allow-credentials: "false"
+    nginx.ingress.kubernetes.io/cors-expose-headers: "*"
+  labels:
+    app: vault-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: vault.nuamx.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: vault
+                port:
+                  number: 8200
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+      - vault.nuamx.com
+      secretName: vault-tls

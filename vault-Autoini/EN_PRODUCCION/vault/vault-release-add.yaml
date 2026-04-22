@@ -1,0 +1,68 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  interval: 5m
+  releaseName: vault
+  chart:
+    spec:
+      chart: vault
+      version: 0.30.0
+      sourceRef:
+        kind: HelmRepository
+        name: hashicorp
+        namespace: vault
+
+  values:
+    global:
+      enabled: true
+
+    ui:
+      enabled: true
+
+    injector:
+      enabled: false
+
+    server:
+      enabled: true
+
+      # 🔥 IMPORTANTE: sin nodeSelector para k3d
+      nodeSelector: {}
+      tolerations: []
+
+      logLevel: info
+
+      # 🚀 Modo standalone (simple y funcional)
+      standalone:
+        enabled: true
+        config: |-
+          ui = true
+
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+          }
+
+          storage "file" {
+            path = "/vault/data"
+          }
+
+      # 💾 Persistencia local
+      dataStorage:
+        enabled: true
+        size: 1Gi
+        storageClass: local-path
+
+      readinessProbe:
+        enabled: true
+        port: 8200
+
+    # 🌐 Exposición para acceder desde tu máquina
+    service:
+      enabled: true
+      type: NodePort
+      nodePort: 8200
+      port: 8200

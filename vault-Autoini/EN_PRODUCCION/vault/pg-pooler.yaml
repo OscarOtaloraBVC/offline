@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: cloudnative-pg-pooler
+  namespace: vault
+spec:
+  cluster:
+    name: cloudnative-pg-cluster
+
+  instances: 1
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "10"
