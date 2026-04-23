@@ -1,4 +1,4 @@
-## Pasos inicio de vault - Raft
+# Pasos inicio de vault - Raft
 
 1 - Inicializar SOLO vault-0
 
@@ -25,6 +25,8 @@ kubectl exec -n vault-raft vault-0 -- vault login hvs.< token >
 kubectl exec -n vault-raft vault-1 & 2 -- vault operator unseal < key 1>
 kubectl exec -n vault-raft vault-1 & 2 -- vault operator unseal < key 2>
 kubectl exec -n vault-raft vault-1 & 2 -- vault operator unseal < key 3>
+
+Nota: Por tiempo de epera para el unseal, el pod puede entrar en crash, reiniciarlo y desbloquear.
 
 3 - Validar cluster
 
