@@ -13,7 +13,7 @@ kubectl apply -f ../../servicemonitors-access.yaml    --namespace $NAMESPACE    
 kubectl apply -f ../../storageclass-access.yaml
 
 # Create the roottoken secret
-kubectl -n $NAMESPACE create secret generic roottoken --from-literal=token="hvs.q7A5FNeQ4ape4l3EM1xnyjao"
+kubectl -n $NAMESPACE create secret generic roottoken --from-literal=token="hvs.<root_token>"
 
 # Instalación del chart de genesis
 helm install genesis ./besu-genesis --namespace $NAMESPACE --values ./values/proxy-and-vault/genesis.yaml

@@ -1,4 +1,4 @@
-TOKEN=hvs.YTPXQ7A0Lv71DyAD6MyFNyh6
+TOKEN=hvs.<root_token>
 VAULT_SERVER=localhost:8200
 NETWORK=testnet
 RPC_URL=http://localhost:8545

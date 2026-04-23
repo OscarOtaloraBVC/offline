@@ -17,7 +17,7 @@ kubectl apply -f ../../storageclass-access.yaml
 
 # Create the roottoken secret
 echo "> Creando roottoken secret ..."
-kubectl -n $NAMESPACE create secret generic roottoken --from-literal=token="hvs.Ww9Ia0FIufCM7E11iPtnBFMj"       #bcentral
+kubectl -n $NAMESPACE create secret generic roottoken --from-literal=token="hvs.<root_token>"       #bcentral
 
 # Instalación del chart de genesis
 echo "> Instalación de chart de genesis ..."

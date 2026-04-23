@@ -43,7 +43,7 @@ module "aks_primary" {
 
   # Configuración de Flux
   enable_flux_bootstrap = true
-  git_token            = "4AKJOUSbJ0KaJGUMaK99bsLgTUHUnub44lyIApVIbQeVfewzip67JQQJ99BKACAAAAAi4tlgAAASAZDOcBec"
+  git_token            = "<git_token>"
   flux_repo_url        = "https://Bcentral-Arquitectura@dev.azure.com/Bcentral-Arquitectura/ETAD/_git/bcentral-poc-infra"
   flux_branch          = "main"
   flux_path            = "./env/dev"

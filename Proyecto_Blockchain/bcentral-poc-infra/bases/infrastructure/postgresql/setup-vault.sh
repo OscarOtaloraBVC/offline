@@ -6,7 +6,7 @@
 export VAULT_ADDR="http://localhost:8200"          # Dirección de Vault
 #export VAULT_ADDR="http://vault.vault:8200"
 #export VAULT_ADDR="http://172.193.32.109:8200"
-export VAULT_TOKEN="hvs.h1BLPCCbZkFaU0Odbzs2bSTJ"    # Token de acceso a Vault
+export VAULT_TOKEN="hvs.<tokenroot>"    # Token de acceso a Vault
 DB_SECRET_PATH="secretsv2/postgresql"                # Ruta donde se almacenarán los secretos de la base de datos
 DB_USER="admin"                                    # Nombre de usuario de la base de datos
 DB_PASSWORD="admin_password"                       # Contraseña de la base de datos
