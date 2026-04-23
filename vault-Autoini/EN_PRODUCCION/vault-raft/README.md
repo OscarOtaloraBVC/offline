@@ -1,3 +1,4 @@
+## Pasos inicio de vault - Raft
 
 1 - Inicializar SOLO vault-0
 
@@ -17,6 +18,8 @@ kubectl exec -n vault-raft vault-0 -- vault operator unseal < key 1>
 kubectl exec -n vault-raft vault-0 -- vault operator unseal < key 2>
 kubectl exec -n vault-raft vault-0 -- vault operator unseal < key 3>
 
+kubectl exec -n vault-raft vault-0 -- vault login hvs.< token >
+
 2- Unseal nodos secundarios (Para nodos 1 y 2)
 
 kubectl exec -n vault-raft vault-1 & 2 -- vault operator unseal < key 1>
@@ -25,6 +28,5 @@ kubectl exec -n vault-raft vault-1 & 2 -- vault operator unseal < key 3>
 
 3 - Validar cluster
 
-kubectl exec -n vault-raft vault-0 -- vault login hvs.< token >
 kubectl exec -n vault-raft vault-0 -- vault operator raft list-peers
 kubectl exec -n vault-raft vault-1 -- vault status
