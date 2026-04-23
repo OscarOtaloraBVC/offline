@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./kustoms/reposources-kustomization.yaml
+  #- ./kustoms/external-secrets-kustomization.yaml
+  #- ./kustoms/cluster-external-store-kustomization.yaml
+  #- ./kustoms/logging-kustomization.yaml
+  #- ./kustoms/velero-kustomization.yaml
+  - ./kustoms/prometheus-kustomization.yaml
+  ##- ./kustoms/postgres-kustomization.yaml
+  - ./kustoms/vault-kustomization.yaml
+  # - ./kustoms/ingress-nginx-kustomization.yaml
+  # - ./kustoms/cert-manager-kustomization.yaml
+  # - ./kustoms/cert-manager-issuer-kustomization.yaml
+  #- ./kustoms/external-dns-kustomization.yaml
+  #- ./kustoms/keycloak-kustomization.yaml
+  #- ./kustoms/keycloak-dev-kustomization.yaml
+  #- ./kustoms/artifactory-kustomization.yaml
+  #- ./kustoms/harbor-kustomization.yaml
+  #- ./kustoms/arc-systems-kustomization.yaml
+  #- ./kustoms/arc-runners-kustomization.yaml

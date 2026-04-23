@@ -1,0 +1,59 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: velero-release
+  namespace: velero
+spec:
+  interval: 5m
+  timeout: 5m
+  chart:
+    spec:
+      chart: velero
+      version: "7.2.1"
+      sourceRef:
+        kind: HelmRepository
+        name: vmware-tanzu
+      interval: 5m
+  releaseName: velero
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    metrics:
+      serviceMonitor:
+        enabled: true
+      prometheusRule:
+        enabled: true
+    credentials: # Borrar credentials una vez se concluya la migración de datos
+      existingSecret: credentials-azure
+    configuration:
+      uploaderType: restic
+      backupStorageLocation:  # Borrar backups storage una vez se concluya la migración de datos
+        - name: backup
+          provider: azure
+          bucket: velero
+          config:
+            resourceGroup: "Velero_Backups"
+            subscriptionId: 4056f4eb-d2a0-4d19-bc6e-064fba6bec58
+            storageAccount: devopsbackup1c816b7b946b
+            storageAccountKeyEnvVar: AZURE_STORAGE_ACCOUNT_ACCESS_KEY
+      volumeSnapshotLocation:  # Borrar volumeSnapshotLocation una vez se concluya la migración de datos
+        - name: snapshot
+          provider: azure
+          config:
+            region: westus
+            subscriptionId: 4056f4eb-d2a0-4d19-bc6e-064fba6bec58
+      defaultVolumesToFsBackup: true
+    initContainers:
+      - name: velero-plugin-for-microsoft-azure
+        image: velero/velero-plugin-for-microsoft-azure:v1.10.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+    deployNodeAgent: true
+    snapshotsEnabled: false

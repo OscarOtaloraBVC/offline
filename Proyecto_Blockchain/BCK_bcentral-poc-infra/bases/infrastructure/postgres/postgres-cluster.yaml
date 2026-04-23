@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+  namespace: postgres
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:15
+  storage:
+    size: 10Gi
+  postgresql:
+    parameters:
+      max_connections: "100"
+  monitoring:
+    enablePodMonitor: true

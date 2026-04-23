@@ -1,0 +1,42 @@
+
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+spec:
+  releaseName: ingress-nginx-external
+  chart:
+    spec:
+      chart: ingress-nginx
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: flux-system
+      version: "4.11.3"
+  interval: 6h0m0s
+  install:
+    remediation:
+      retries: 3
+  values:
+    controller:
+      admissionWebhooks:
+        enabled: false
+      allowSnippetAnnotations: true
+      kind: DaemonSet
+      dnsPolicy: ClusterFirstWithHostNet
+      service:
+        enabled: true
+        type: LoadBalancer
+        annotations:
+          service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz
+      config:
+        enable-underscores-in-headers: "true"
+        proxy-body-size: "1024m"
+        proxy-read-timeout: "300"
+        proxy-send-timeout: "300"
+        proxy-buffer-size: "16k"
+      metrics:
+        enabled: false
+    defaultBackend:
+      enabled: true
+    revisionHistoryLimit: 3

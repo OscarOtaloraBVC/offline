@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: offchain-sql-files
+  namespace: postgresql
+data:
+  offchain_schema.sql: |
+    CREATE TABLE contract_metadata (
+        id SERIAL PRIMARY KEY,
+        contract_address VARCHAR(255) NOT NULL UNIQUE,
+        creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        owner VARCHAR(255) NOT NULL,
+        metadata JSONB
+    );
+
+    CREATE TABLE transaction_details (
+        id SERIAL PRIMARY KEY,
+        transaction_hash VARCHAR(255) NOT NULL,
+        contract_metadata_id INTEGER NOT NULL,
+        from_address VARCHAR(255) NOT NULL,
+        to_address VARCHAR(255) NOT NULL,
+        value DECIMAL(18, 8) NOT NULL,
+        timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (contract_metadata_id) REFERENCES contract_metadata(id)
+    );
+
+    CREATE TABLE price_references (
+        id SERIAL PRIMARY KEY,
+        currency VARCHAR(10) NOT NULL,
+        price DECIMAL(18, 8) NOT NULL,
+        timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+  poblar_datos.sql: |
+    INSERT INTO contract_metadata (id, contract_address, creation_date, owner, metadata)
+    VALUES
+        (1, '0x1234567890abcdef1234567890abcdef12345678', NOW(), 'Owner A', '{"name": "Contract A", "version": "1.0", "type": "ERC20"}'),
+        (2, '0xabcdef1234567890abcdef1234567890abcdef12', NOW(), 'Owner B', '{"name": "Contract B", "version": "2.1", "type": "ERC721"}'),
+        (3, '0x9876543210fedcba9876543210fedcba98765432', NOW(), 'Owner C', '{"name": "Contract C", "version": "1.5", "type": "Custom"}');
+
+    INSERT INTO transaction_details (id, transaction_hash, contract_metadata_id, from_address, to_address, value)
+    VALUES
+        (1, '0xabc123def456ghi789jkl012mno345pqr678stu901vwx234yzabcdef012345', 1, '0xsender1234567890abcdef1234567890abcdef12', '0xreceiver1234567890abcdef1234567890abcd', 1000.50000000),
+        (2, '0x123abc456def789ghi012jkl345mno678pqr901stu234vwx567yzabcdef890', 1, '0xsender2234567890abcdef1234567890abcdef12', '0xreceiver2234567890abcdef1234567890abcd', 2500.75000000),
+        (3, '0xdef789abc123ghi456jkl789mno012pqr345stu678vwx901yzabcdef234567', 2, '0xsender3234567890abcdef1234567890abcdef12', '0xreceiver3234567890abcdef1234567890abcd', 750.25000000),
+        (4, '0x456def789abc012ghi345jkl678mno901pqr234stu567vwx890yzabcdef123456', 3, '0xsender4234567890abcdef1234567890abcdef12', '0xreceiver4234567890abcdef1234567890abcd', 3200.00000000);
+
+    INSERT INTO price_references (id, currency, price, timestamp)
+    VALUES
+        (1, 'USD', 50.12345678, NOW()),
+        (2, 'EUR', 45.87654321, NOW()),
+        (3, 'BTC', 0.00125000, NOW()),
+        (4, 'ETH', 0.02500000, NOW()),
+        (5, 'CLP', 950.50000000, NOW());

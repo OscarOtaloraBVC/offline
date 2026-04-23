@@ -1,0 +1,127 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake-mariadb
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: 1.0.2
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: devlake-lake
+            patch: |
+              - op: replace
+                path: /spec/template/spec/initContainers/0/command
+                value:
+                  - sh
+                  - -c
+                  - |
+                    until nc -z -w 2 devlake-mariadb.devlake-mariadb.svc.cluster.local 3306; do
+                      echo wait for database ready ...
+                      sleep 2
+                    done
+                    echo database is ready
+              # en AKS, Si es necesario fijar en un nodepool específico, usar:
+              - op: add
+                path: /spec/template/spec/nodeSelector
+                value:
+                  kubernetes.io/hostname: aks-pool1-11548068-vmss00001c 
+              - op: replace
+                path: /spec/template/spec/containers/0/envFrom/1/secretRef/name
+                value: devlake-mariadb-auth
+          - target:
+              kind: ConfigMap
+              name: devlake-config
+            patch: |
+              - op: replace
+                path: /data/MYSQL_SERVER
+                value: "devlake-mariadb.devlake-mariadb.svc.cluster.local"
+              - op: replace
+                path: /data/MYSQL_URL
+                value: "devlake-mariadb.devlake-mariadb.svc.cluster.local:3306"
+              - op: replace
+                path: /data/MYSQL_USER
+                value: "devlake"
+          - target:
+              kind: Deployment
+              name: devlake-grafana
+            patch: |
+              - op: replace
+                path: /spec/template/spec/containers/0/envFrom
+                value:
+                  - secretRef:
+                      name: devlake-mariadb-auth
+  values:
+    database: # Cambiar a MariaDB/MySQL
+      type: mysql    
+    mysql:
+      enabled: true
+      useExternal: true
+      host: "devlake-mariadb.devlake-mariadb.svc.cluster.local" 
+      port: 3306
+      existingSecret: devlake-mariadb-auth
+      existingSecretUser: MYSQL_USER
+      existingSecretPassword: MYSQL_PASSWORD
+      existingSecretDatabase: MYSQL_DATABASE      
+    lake: # Configuración Encryption secret para DevLake
+      
+      extraEnvsFromSecret: ""
+      encryptionSecret:
+        secretName: encryption-secret
+        secret: ""
+        autoCreateSecret: false
+
+    grafana: # Configuración de Grafana
+      enabled: true
+
+      nodeSelector:
+        kubernetes.io/hostname: aks-pool1-11548068-vmss00001c
+    
+      # Inyecta variables del Secret
+      envFromSecret: devlake-mariadb-auth
+
+      # Provision automático del DataSource
+      datasources:
+        # Provision automática del DataSource mariadb
+        datasources.yaml: 
+          apiVersion: 1
+          datasources:
+            - name: mariadb
+              type: mysql
+              access: proxy
+              url: devlake-mariadb.devlake-mariadb.svc.cluster.local:3306
+              database: lake
+              user: devlake
+              secureJsonData:
+                password: $__env{MYSQL_PASSWORD}
+              jsonData:
+                tlsAuth: false
+                tlsSkipVerify: false
+                maxOpenConns: 100
+                maxIdleConns: 100
+                connMaxLifetime: 14400
+              isDefault: true
+              editable: false
+    ui:
+      service:
+        type: ClusterIP
+        nodePort: null
+# Revisar el despliegue del ingress en AKS o Application Gateway Ingress Controller (AGIC)
+    ingress:
+      enabled: true
+      hosts:
+        - host: devlake.nuam.com
+          paths:
+            - path: /
+              pathType: Prefix

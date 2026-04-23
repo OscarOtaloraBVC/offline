@@ -1,0 +1,69 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake-cloudnative-pg
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: 1.0.2
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+
+  # Patch para corregir el bug del init container
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: devlake-lake
+            patch: |
+              - op: replace
+                path: /spec/template/spec/initContainers/0/command
+                value:
+                  - sh
+                  - -c
+                  - |
+                    until nc -z -w 2 postgres-devlake-rw.devlake-cloudnative-pg.svc.cluster.local 5432; do
+                      echo wait for database ready ...
+                      sleep 2
+                    done
+                    echo database is ready
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: DB_URL
+                  value: "postgresql://devlake:Admin123@postgres-devlake-rw.devlake-cloudnative-pg.svc.cluster.local:5432/lake?sslmode=disable"
+
+  values:
+    
+    option: # Indicar a DevLake que use PostgreSQL
+      database: pgsql
+    
+    mysql: # Deshabilitar MySQL
+      enabled: false
+    
+    pgsql:
+      useExternal: true
+      externalServer: "postgres-devlake-rw.devlake-cloudnative-pg.svc.cluster.local"
+      externalPort: 5432
+      username: "devlake"          
+      password: "Admin123"         
+      database: "lake"
+    
+    lake:   # Configuración Encryption secret para DevLake
+      encryptionSecret:
+        secretName: "encryption-secret"
+        secret: "ENCODE_KEY"
+    grafana: # Configuración de Grafana
+      enabled: true
+
+    ingress:
+      enabled: true
+      hosts:
+        - host: devlake.nuam.com

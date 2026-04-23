@@ -1,0 +1,123 @@
+# pipeline-build.yaml
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+  paths:
+    exclude:
+      - README.md
+      - docs/*
+      - .gitignore
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  - group: 'banco-central-secrets'
+  - name: 'buildConfiguration'
+    value: 'Release'
+  - name: 'dockerRegistry'
+    value: 'bancocentral.azurecr.io'
+  - name: 'nodeVersion'
+    value: '18.x'
+  - name: 'dotnetVersion'
+    value: '8.0.x'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: BuildBackend
+  displayName: 'Build Backend Services'
+  steps:
+  - task: UseDotNet@2
+    displayName: 'Setup .NET SDK'
+    inputs:
+      version: '$(dotnetVersion)'
+  
+  - task: DotNetCoreCLI@2
+    displayName: 'Restore Backend Dependencies'
+    inputs:
+      command: 'restore'
+      projects: 'src/backend/**/*.csproj'
+  
+  - task: DotNetCoreCLI@2
+    displayName: 'Build Backend'
+    inputs:
+      command: 'build'
+      projects: 'src/backend/**/*.csproj'
+      arguments: '--configuration $(buildConfiguration) --no-restore'
+  
+  - task: Docker@2
+    displayName: 'Build Backend Docker Images'
+    inputs:
+      containerRegistry: '$(dockerRegistry)'
+      repository: 'backend-api'
+      command: 'build'
+      Dockerfile: 'src/backend/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+        latest
+
+- job: BuildFrontend
+  displayName: 'Build Frontend Application'
+  steps:
+  - task: NodeTool@0
+    displayName: 'Setup Node.js'
+    inputs:
+      versionSpec: '$(nodeVersion)'
+  
+  - task: Npm@1
+    displayName: 'Install Frontend Dependencies'
+    inputs:
+      command: 'ci'
+      workingDir: 'src/frontend'
+  
+  - task: Npm@1
+    displayName: 'Build Frontend'
+    inputs:
+      command: 'custom'
+      customCommand: 'run build:prod'
+      workingDir: 'src/frontend'
+  
+  - task: Docker@2
+    displayName: 'Build Frontend Docker Image'
+    inputs:
+      containerRegistry: '$(dockerRegistry)'
+      repository: 'frontend-app'
+      command: 'build'
+      Dockerfile: 'src/frontend/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+        latest
+
+- job: BuildSmartContracts
+  displayName: 'Build Smart Contracts'
+  steps:
+  - task: NodeTool@0
+    displayName: 'Setup Node.js'
+    inputs:
+      versionSpec: '$(nodeVersion)'
+  
+  - task: Npm@1
+    displayName: 'Install Contract Dependencies'
+    inputs:
+      command: 'ci'
+      workingDir: 'src/contracts'
+  
+  - script: |
+      cd src/contracts
+      npx hardhat compile
+      npx hardhat size-contracts
+    displayName: 'Compile Smart Contracts'
+  
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Contract Artifacts'
+    inputs:
+      targetPath: 'src/contracts/artifacts'
+      artifact: 'smart-contracts'

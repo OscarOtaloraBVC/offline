@@ -1,0 +1,33 @@
+{
+  "sampleRequests": [
+    {
+      "description": "Obtener metadata de un contrato inteligente",
+      "request": {
+        "method": "GET",
+        "url": "/offchain/contracts/12345/metadata",
+        "queryParameters": {
+          "includeDetails": "true"
+        }
+      }
+    },
+    {
+      "description": "Obtener detalles de una transacción",
+      "request": {
+        "method": "GET",
+        "url": "/offchain/transactions/abcde12345/details",
+        "queryParameters": {
+          "fromDate": "2023-01-01",
+          "toDate": "2023-12-31"
+        }
+      }
+    },
+    {
+      "description": "Obtener precio de un activo",
+      "request": {
+        "method": "GET",
+        "url": "/offchain/prices/bitcoin",
+        "queryParameters": {}
+      }
+    }
+  ]
+}

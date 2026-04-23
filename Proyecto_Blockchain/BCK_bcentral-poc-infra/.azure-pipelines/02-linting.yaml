@@ -1,0 +1,91 @@
+# pipeline-linting.yaml
+trigger: none
+pr: none
+
+variables:
+  - group: 'banco-central-secrets'
+  - name: 'nodeVersion'
+    value: '18.x'
+  - name: 'dotnetVersion'
+    value: '8.0.x'
+  - name: 'terraformVersion'
+    value: '1.6.0'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: LintBackend
+  displayName: 'Backend Linting'
+  steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '$(dotnetVersion)'
+  
+  - script: |
+      dotnet tool install --global dotnet-format
+      dotnet format --verify-no-changes --verbosity diagnostic src/backend/
+    displayName: 'Run .NET Code Formatting Check'
+  
+  - task: SonarCloudPrepare@1
+    displayName: 'Prepare SonarCloud Analysis'
+    inputs:
+      SonarCloud: 'SonarCloud-BancoCentral'
+      organization: 'banco-central'
+      scannerMode: 'MSBuild'
+      projectKey: 'backend-services'
+
+- job: LintFrontend
+  displayName: 'Frontend Linting'
+  steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '$(nodeVersion)'
+  
+  - task: Npm@1
+    inputs:
+      command: 'ci'
+      workingDir: 'src/frontend'
+  
+  - script: |
+      cd src/frontend
+      npm run lint
+      npm run prettier:check
+      npm run stylelint
+    displayName: 'Run Frontend Linting'
+
+- job: LintSmartContracts
+  displayName: 'Smart Contracts Linting'
+  steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '$(nodeVersion)'
+  
+  - task: Npm@1
+    inputs:
+      command: 'ci'
+      workingDir: 'src/contracts'
+  
+  - script: |
+      cd src/contracts
+      npx solhint 'contracts/**/*.sol'
+      npx prettier --check 'contracts/**/*.sol'
+    displayName: 'Run Solidity Linting'
+
+- job: LintInfrastructure
+  displayName: 'Infrastructure Linting'
+  steps:
+  - task: TerraformInstaller@0
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '$(terraformVersion)'
+  
+  - script: |
+      terraform fmt -check -recursive infrastructure/
+      tflint --init
+      tflint infrastructure/
+    displayName: 'Run Terraform Linting'
+  
+  - script: |
+      checkov -d infrastructure/ --framework terraform
+    displayName: 'Run Infrastructure Security Scan'

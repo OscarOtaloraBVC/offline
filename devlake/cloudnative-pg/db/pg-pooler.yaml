@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: postgres-devlake-pool
+  namespace: devlake-cloudnative-pg
+spec:
+  cluster:
+    name: postgres-devlake
+  instances: 2
+  type: rw
+  pgbouncer:
+    poolMode: session
+    parameters:
+      max_client_conn: "1000"
+      default_pool_size: "20"  # Ajusta según conexiones
+      reserve_pool_size: "5"
+      reserve_pool_timeout: "5"
+      ignore_startup_parameters: "extra_float_digits"
+      server_reset_query: "DISCARD ALL" # Permitir consultas de inicialización
+      server_check_delay: "30" # Timeouts más permisivos para inicialización
+      query_wait_timeout: "120"

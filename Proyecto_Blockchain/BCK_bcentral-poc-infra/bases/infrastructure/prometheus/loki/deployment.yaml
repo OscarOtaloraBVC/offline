@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-deployment
+  namespace: monitoring
+  labels:
+    app: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:  
+      restartPolicy: Always
+      containers:
+        - name: loki-container
+          image: grafana/loki:3.5
+          imagePullPolicy: Always
+          args:
+            - "-config.file=/etc/loki/local-config.yaml"
+          stdin: true
+          tty: true
+          ports:
+            - containerPort: 3100

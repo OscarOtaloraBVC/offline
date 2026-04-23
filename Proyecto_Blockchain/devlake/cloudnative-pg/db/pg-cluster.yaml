@@ -1,0 +1,86 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-devlake
+  namespace: devlake-cloudnative-pg
+spec:
+  instances: 2
+
+  storage:
+    size: 1Gi
+    storageClass: local-path
+
+  bootstrap:
+    initdb:
+      database: lake
+      owner: devlake
+      secret:
+        name: postgres-devlake-user
+      # CONFIGURACIÓN DE LOCALE
+      localeCollate: 'en_US.UTF-8'
+      localeCType: 'en_US.UTF-8'
+      encoding: 'UTF8'
+      dataChecksums: true
+      # Permisos ejecutados automáticamente tras crear la BD
+      postInitSQL:
+        - "ALTER ROLE devlake WITH SUPERUSER CREATEDB CREATEROLE REPLICATION BYPASSRLS"
+        - "ALTER ROLE devlake SET search_path TO public, pg_catalog"
+      postInitApplicationSQL:
+        - "GRANT ALL PRIVILEGES ON DATABASE lake TO devlake"
+        - "GRANT ALL ON SCHEMA public TO devlake"
+        - "ALTER SCHEMA public OWNER TO devlake"
+        - "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO devlake"
+        - "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO devlake"
+        - "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO devlake"
+        - "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO devlake"
+
+  superuserSecret:
+    name: postgres-devlake-superuser
+
+  # --- CONFIGURACIÓN PARA DEVLAKE ---
+  postgresql:
+
+    parameters:
+      # Memoria (ajusta según RAM disponible - ejemplo para 8GB RAM)
+      shared_buffers: '2GB'           # 25% de 8GB
+      effective_cache_size: '6GB'      # 75% de 8GB
+      work_mem: '64MB'                 # Valor medio del rango
+      maintenance_work_mem: '1GB'      # Valor medio del rango
+      
+      # WAL (Write-Ahead Logging)
+      wal_buffers: '32MB'               # Valor medio del rango
+      checkpoint_completion_target: '0.9'
+      max_wal_size: '8GB'               # Valor medio del rango
+      
+      # Planner / Analítico
+      default_statistics_target: '1000'  # Alto para queries complejas
+      random_page_cost: '1.2'            # Para SSD
+      enable_partitionwise_aggregate: 'on'
+      enable_partitionwise_join: 'on'
+      
+      # Concurrencia
+      max_connections: '200'              # Máximo del rango
+      
+      # Autovacuum
+      autovacuum_vacuum_scale_factor: '0.05'
+      autovacuum_analyze_scale_factor: '0.02'
+      autovacuum_max_workers: '8'         # Valor medio del rango
+      
+      # Particionado
+      enable_partition_pruning: 'on'
+      
+      # Monitoreo y Logging
+      log_min_duration_statement: '500ms'  # Queries lentas > 500ms
+      log_line_prefix: '%m [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h,session=%c '
+      log_lock_waits: 'on'
+      deadlock_timeout: '1s'
+      track_activities: 'on'
+      track_counts: 'on'
+
+      # Parámetros adicionales útiles para DevLake
+      idle_in_transaction_session_timeout: '1h'  # Evita sesiones colgadas
+      statement_timeout: '1h'                     # Timeout para queries largas
+      
+  # Configuración adicional de monitoreo
+  monitoring:
+    enablePodMonitor: true  

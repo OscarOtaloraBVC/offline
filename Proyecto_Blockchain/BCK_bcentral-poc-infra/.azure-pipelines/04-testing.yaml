@@ -1,0 +1,69 @@
+# pipeline-testing.yaml
+trigger: none
+pr: none
+
+variables:
+  - group: 'banco-central-secrets'
+  - name: 'nodeVersion'
+    value: '18.x'
+  - name: 'dotnetVersion'
+    value: '8.0.x'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: UnitTests
+  displayName: 'Unit Tests'
+  strategy:
+    matrix:
+      Backend:
+        testProject: 'src/backend/tests'
+        testCommand: 'dotnet test --logger trx --collect:"XPlat Code Coverage"'
+      Frontend:
+        testProject: 'src/frontend'
+        testCommand: 'npm run test:coverage'
+      Contracts:
+        testProject: 'src/contracts'
+        testCommand: 'npx hardhat test --reporter json > test-results.json'
+  steps:
+  - script: |
+      cd $(testProject)
+      $(testCommand)
+    displayName: 'Run Unit Tests'
+  
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results'
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/*test-results.xml'
+      mergeTestResults: true
+  
+  - task: PublishCodeCoverageResults@1
+    displayName: 'Publish Code Coverage'
+    inputs:
+      codeCoverageTool: 'Cobertura'
+      summaryFileLocation: '**/coverage.cobertura.xml'
+
+- job: IntegrationTests
+  displayName: 'Integration Tests'
+  services:
+    postgres: postgres:13
+    redis: redis:6
+  steps:
+  - script: |
+      cd src/backend
+      dotnet test tests/Integration.Tests/ --logger trx
+    displayName: 'Run Backend Integration Tests'
+  
+  - script: |
+      cd src/contracts
+      npx hardhat test test/integration/ --network localhost
+    displayName: 'Run Contract Integration Tests'
+  
+  - task: PublishTestResults@2
+    displayName: 'Publish Integration Test Results'
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: '**/*.trx'
+      mergeTestResults: true

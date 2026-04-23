@@ -1,0 +1,14 @@
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: schedule-devops-prod
+  namespace: velero
+spec:
+  schedule: "0 21 * * *"
+  template:
+    includedNamespaces: #Este valor permite añadir los namespaces específicos
+      - postgresql
+      - artifactory
+    storageLocation: backup-devops-prod
+    ttl: 240h

@@ -1,0 +1,14 @@
+.gitignore
+.npmignore
+api.ts
+base.ts
+common.ts
+configuration.ts
+docs/ContractMetadata.md
+docs/ContractMetadataParametersInner.md
+docs/DefaultApi.md
+docs/PriceReference.md
+docs/TransactionDetails.md
+docs/TransactionDetailsDetails.md
+git_push.sh
+index.ts

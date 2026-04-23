@@ -1,0 +1,31 @@
+# pipeline-static-analysis.yaml
+trigger: none
+pr: none
+
+variables:
+  - group: 'banco-central-secrets'
+  - name: 'RunStaticAnalysis'
+    value: 'true'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: NUAMAnalysis
+  displayName: 'NUAM Security & Quality Analysis'
+  condition: eq(variables['RunStaticAnalysis'], 'true')
+  steps:
+  - script: |
+      echo "Connecting to NUAM environment..."
+      # Configuración específica para NUAM
+      # Este step requiere configuración del ambiente NUAM
+      echo "Running NUAM Static Analysis..."
+      # Agregar comandos específicos de NUAM aquí
+    displayName: 'Run NUAM Static Analysis'
+  
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Analysis Results'
+    inputs:
+      targetPath: '$(System.DefaultWorkingDirectory)'
+      artifact: 'nuam-analysis-results'
+    condition: always()

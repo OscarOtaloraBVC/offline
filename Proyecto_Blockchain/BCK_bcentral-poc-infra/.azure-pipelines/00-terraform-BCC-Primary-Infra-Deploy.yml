@@ -1,0 +1,152 @@
+name: 'BCC-Primary-Infra-Deploy'
+
+variables:
+  terraformVersion: '1.5.0'
+  azureSubscription: 'sc-nuam-dev-bcentral'
+  terraformDirectory: 'utils/00-terraform'
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - 'README.md'
+
+pr: none
+
+stages:
+# --------------------------
+# STAGE 1: INIT
+# --------------------------
+- stage: Initialize
+  displayName: 'Terraform Init'
+  jobs:
+  - job: Init
+    displayName: 'Initialize Terraform Backend'
+    pool:
+      vmImage: 'ubuntu-latest'   # Usa agente Microsoft-hosted
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Instalar Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        environmentServiceName: '$(azureSubscription)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publicar init Terraform'
+      inputs:
+        pathtoPublish: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        artifactName: 'tfinit'
+
+# --------------------------
+# STAGE 2: VALIDATE
+# --------------------------
+- stage: Validate
+  displayName: 'Terraform Validate'
+  dependsOn: Initialize
+  jobs:
+  - job: Validate
+    displayName: 'Validar configuración Terraform'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Instalar Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Descargar init Terraform'
+      inputs:
+        buildType: 'current'
+        artifactName: 'tfinit'
+        downloadPath: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Validate'
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        environmentServiceName: '$(azureSubscription)'
+
+# --------------------------
+# STAGE 3: PLAN
+# --------------------------
+- stage: Plan
+  displayName: 'Terraform Plan'
+  dependsOn: Validate
+  jobs:
+  - job: Plan
+    displayName: 'Generar plan Terraform'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Instalar Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Descargar init Terraform'
+      inputs:
+        buildType: 'current'
+        artifactName: 'tfinit'
+        downloadPath: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Plan'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        environmentServiceName: '$(azureSubscription)'
+        commandOptions: '-out=tfplan'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publicar plan Terraform'
+      inputs:
+        pathtoPublish: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        artifactName: 'tfplan'
+
+# --------------------------
+# STAGE 4: APPLY
+# --------------------------
+- stage: Deploy
+  displayName: 'Terraform Apply'
+  dependsOn: Plan
+  condition: succeeded()   # solo aplica si los stages previos pasaron
+  jobs:
+  - job: Apply
+    displayName: 'Aplicar cambios Terraform'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Instalar Terraform'
+      inputs:
+        terraformVersion: '$(terraformVersion)'
+
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Descargar plan Terraform'
+      inputs:
+        buildType: 'current'
+        artifactName: 'tfplan'
+        downloadPath: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Apply'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/$(terraformDirectory)'
+        environmentServiceName: '$(azureSubscription)'
+        commandOptions: '-auto-approve tfplan'

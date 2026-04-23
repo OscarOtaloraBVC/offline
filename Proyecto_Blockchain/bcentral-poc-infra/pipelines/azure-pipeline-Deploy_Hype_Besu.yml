@@ -1,0 +1,245 @@
+#Limita la ejecución, Solo se ejecuta el pipeline relacionado con las ramas y los archivos modificados (Rama: main path: infra/**).
+#trigger:
+#  branches:
+#    include:
+#      - main
+#  paths:
+#    include:
+#      - infra/**
+
+#No se ejecuta automáticamente con el cambio en alguna rama
+trigger: none
+
+variables:
+  # Variables existentes
+  - group: Besu-Deploy-Vars
+
+  # Variables de autenticación solicitadas
+  - name: azureSubscription
+    value: 'sc-nuam-dev-bcentral'
+  - name: resourceGroup
+    value: 'BCC-primary-Blockchain-group'
+  - name: aksClusterName
+    value: 'BCC-primary-aks-cluster'
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: Deploy_Besu
+  displayName: Despliegue de Red Besu
+  jobs:
+  - job: Deploy
+    displayName: Despliegue de Helm Charts
+    continueOnError: false
+
+    steps:
+
+    # ---------------------------
+    # Instalación de herramientas
+    # ---------------------------
+    - task: HelmInstaller@1
+      displayName: Instalación Helm
+      inputs:
+        helmVersion: '3.14.0'
+
+    - task: KubectlInstaller@0
+      displayName: Instalación kubectl
+      inputs:
+        kubectlVersion: 'latest'
+
+    # ---------------------------
+    # Autenticación contra AKS
+    # ---------------------------
+    - task: AzureCLI@2
+      displayName: Autenticarse en AKS
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials \
+            --resource-group $(resourceGroup) \
+            --name $(aksClusterName) \
+            --overwrite-existing
+
+          kubectl get nodes
+
+    # ---------------------------
+    # Namespace
+    # ---------------------------
+    - script: |
+        kubectl get namespace $(NAMESPACE) || kubectl create namespace $(NAMESPACE)
+      displayName: Creación y validación del Namespace
+
+    # ---------------------------
+    # Ambassador Edge Stack (CRDs)
+    # ---------------------------
+    - script: |
+        kubectl get namespace emissary-system || kubectl create namespace emissary-system
+      displayName: Crear namespace emissary-system
+
+    - script: |
+        kubectl apply -f ./utils/bcentral-testnet/aes-crds.yaml
+      displayName: Instalación Ambassador CRDs
+
+    - script: |
+        kubectl apply -f ./utils/central-testnet/ambassador-mapping-access.yaml --namespace $(NAMESPACE)
+        kubectl apply -f ./utils/bcentral-testnet/servicemonitors-access.yaml --namespace $(NAMESPACE)
+        kubectl apply -f ./utils/bcentral-testnet/storageclass-access.yaml
+      displayName: Aplicación de manifiestos Ambassador y Storage
+
+    # ---------------------------
+    # Secret roottoken
+    # ---------------------------
+    - script: |
+        kubectl -n $(NAMESPACE) delete secret roottoken --ignore-not-found
+        kubectl -n $(NAMESPACE) create secret generic roottoken \
+          --from-literal=token="$(ROOT_TOKEN)"
+      displayName: Creación del secreto roottoken
+
+    # ---------------------------
+    # Genesis
+    # ---------------------------
+    - script: |
+        helm install genesis ./utils/bcentral-testnet/hyperledger-besu/charts/besu-genesis \
+          --namespace $(NAMESPACE) \
+          --values ./utils/bcentral-testnet/hyperledger-besu/charts/values/proxy-and-vault/genesis.yaml
+      displayName: Despliegue de Genesis
+
+    # ---------------------------
+    # Nodos Validadores
+    # ---------------------------
+    - script: |
+        CHART_PATH="./utils/bcentral-testnet/hyperledger-besu/charts/besu-node"
+        VALUES_PATH="./utils/bcentral-testnet/hyperledger-besu/charts/values/proxy-and-vault"
+
+        helm install validator-1 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/validator.yaml
+        helm install validator-2 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/validator.yaml
+        helm install validator-3 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/validator.yaml
+        helm install validator-4 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/validator.yaml
+      displayName: Despliegue de Nodos Validadores
+
+    # ---------------------------
+    # Nodos Peers
+    # ---------------------------
+    - script: |
+        CHART_PATH="./utils/bcentral-testnet/hyperledger-besu/charts/besu-node"
+        VALUES_PATH="./utils/bcentral-testnet/hyperledger-besu/charts/values/proxy-and-vault"
+
+        helm install peer-1 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/txnode.yaml
+        helm install peer-2 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/txnode.yaml
+        helm install peer-3 $CHART_PATH --namespace $(NAMESPACE) --values $VALUES_PATH/txnode.yaml
+      displayName: Despliegue de Nodos Peers
+
+- stage: Actualizar_ConfigMap
+  displayName: Actualizar ConfigMap de Peers
+  dependsOn: Deploy_Besu
+  jobs:
+  - job: Actualizar_ConfigMap
+    displayName: Actualizar ConfigMap de Besu Peers
+    continueOnError: false
+
+    steps:
+    - task: KubectlInstaller@0
+      displayName: Instalacion kubectl
+      inputs:
+        kubectlVersion: 'latest'
+
+    - task: AzureCLI@2
+      displayName: Autenticacion en AKS
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials \
+            --resource-group $(resourceGroup) \
+            --name $(aksClusterName) \
+            --overwrite-existing
+
+    - script: |
+        # Eliminar ConfigMap existente
+        kubectl delete configmap besu-peers -n $(NAMESPACE) --ignore-not-found
+
+        # Obtener claves públicas de los nodos validadores
+        echo "Obteniendo claves públicas de los validadores..."
+        
+        PUBKEY1=$(kubectl get secret besu-node-validator-1-keys -n $(NAMESPACE) -o jsonpath='{.data.nodekey\.pub}' | base64 -d)
+        PUBKEY2=$(kubectl get secret besu-node-validator-2-keys -n $(NAMESPACE) -o jsonpath='{.data.nodekey\.pub}' | base64 -d)
+        PUBKEY3=$(kubectl get secret besu-node-validator-3-keys -n $(NAMESPACE) -o jsonpath='{.data.nodekey\.pub}' | base64 -d)
+        PUBKEY4=$(kubectl get secret besu-node-validator-4-keys -n $(NAMESPACE) -o jsonpath='{.data.nodekey\.pub}' | base64 -d)
+
+        echo "Claves obtenidas correctamente"
+
+        # Crear ConfigMap con los peers
+        kubectl apply -f - <<EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: besu-peers
+          namespace: $(NAMESPACE)
+        data:
+          static-nodes.json: |
+            [
+              "enode://${PUBKEY1}@besu-node-validator-1.$(NAMESPACE).svc.cluster.local:30303?discport=0",
+              "enode://${PUBKEY2}@besu-node-validator-2.$(NAMESPACE).svc.cluster.local:30303?discport=0",
+              "enode://${PUBKEY3}@besu-node-validator-3.$(NAMESPACE).svc.cluster.local:30303?discport=0",
+              "enode://${PUBKEY4}@besu-node-validator-4.$(NAMESPACE).svc.cluster.local:30303?discport=0"
+              ]
+        EOF
+
+        echo "ConfigMap creado exitosamente"
+        kubectl get configmap besu-peers -n $(NAMESPACE) -o yaml
+      displayName: Crear ConfigMap con peers de Besu
+
+- stage: Reiniciar_Pods
+  displayName: Reiniciar Pods de Besu
+  dependsOn: Actualizar_ConfigMap
+  jobs:
+  - job: Restart_Pods
+    displayName: Reiniciar todos los pods de Besu
+    continueOnError: false
+
+    steps:
+    - task: KubectlInstaller@0
+      displayName: Instalación kubectl
+      inputs:
+        kubectlVersion: 'latest'
+
+    - task: AzureCLI@2
+      displayName: Autenticarse en AKS
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials \
+            --resource-group $(resourceGroup) \
+            --name $(aksClusterName) \
+            --overwrite-existing
+
+    - script: |
+        echo "Reiniciando pods de Besu..."
+        
+        # Reiniciar pods de validadores
+        kubectl delete pod \
+            besu-node-validator-1-0 \
+            besu-node-validator-2-0 \
+            besu-node-validator-3-0 \
+            besu-node-validator-4-0 \
+            besu-node-peer-1-0 \
+            besu-node-peer-2-0 \
+            besu-node-peer-3-0 \
+            -n $(NAMESPACE) \
+            --ignore-not-found
+
+        echo "Pods eliminados. Esperando recreación automática..."
+        
+        # Esperar a que los pods se recreen
+        sleep 30
+        
+        # Verificar estado de los pods
+        echo "Estado de los pods después del reinicio:"
+        kubectl get pods -n $(NAMESPACE) --selector=app.kubernetes.io/name=besu-node
+      displayName: Reiniciar pods para aplicar ConfigMap

@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: external-secrets
+resources:
+  - cluster-store-vault.yaml #Requiere la creación del secreto para acceso a Vault
+  - cluster-external-secret.yaml

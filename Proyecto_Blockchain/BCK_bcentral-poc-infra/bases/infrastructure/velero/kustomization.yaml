@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: velero
+resources:
+  - namespace.yaml
+  - vmware-tanzu.yaml
+  - credentials-azure-external-secret.yaml
+  - velero-release.yaml
+  - service-monitor-velero.yaml
+  - credentials-azure-prod.yaml
+  - backup-storage-location.yaml
+  - schedule.yaml

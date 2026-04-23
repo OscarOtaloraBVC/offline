@@ -1,0 +1,78 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake-mariadb
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: 1.0.2
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: devlake-lake
+            patch: |
+              - op: replace
+                path: /spec/template/spec/initContainers/0/command
+                value:
+                  - sh
+                  - -c
+                  - |
+                    until nc -z -w 2 devlake-mariadb.devlake-mariadb.svc.cluster.local 3306; do
+                      echo wait for database ready ...
+                      sleep 2
+                    done
+                    echo database is ready
+              - op: add
+                path: /spec/template/spec/nodeSelector
+                value:
+                  kubernetes.io/hostname: k3d-devlake-server-0
+              - op: replace
+                path: /spec/template/spec/containers/0/envFrom/1/secretRef/name
+                value: devlake-mariadb-auth
+          - target:
+              kind: ConfigMap
+              name: devlake-config
+            patch: |
+              - op: replace
+                path: /data/MYSQL_SERVER
+                value: "devlake-mariadb.devlake-mariadb.svc.cluster.local"
+              - op: replace
+                path: /data/MYSQL_URL
+                value: "devlake-mariadb.devlake-mariadb.svc.cluster.local:3306"
+              - op: replace
+                path: /data/MYSQL_USER
+                value: "devlake"
+  values:
+    database: # Cambiar a MariaDB/MySQL
+      type: mysql    
+    mysql:
+      enabled: true
+      useExternal: true
+      host: "devlake-mariadb.devlake-mariadb.svc.cluster.local" 
+      port: 3306
+      existingSecret: devlake-mariadb-auth
+      existingSecretUser: MYSQL_USER
+      existingSecretPassword: MYSQL_PASSWORD
+      existingSecretDatabase: MYSQL_DATABASE      
+    lake: # Configuración Encryption secret para DevLake
+      encryptionSecret:
+        secretName: encryption-secret
+        secret: ENCRYPTION_SECRET
+    grafana: # Configuración de Grafana
+      enabled: true
+    ingress:
+      enabled: false
+      #hosts:
+      #  - host: devlake.nuam.com
+    alertmanager:
+      enabled: false   # Evita error smtp-secret

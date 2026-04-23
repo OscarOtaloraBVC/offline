@@ -1,0 +1,1 @@
+## References for bases apps building for DevOps Team

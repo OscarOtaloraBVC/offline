@@ -1,0 +1,198 @@
+openapi: 3.0.0
+info:
+  title: API Off-Chain del Banco Central
+  description: API para exponer datos complementarios de la blockchain a sistemas internos y externos de forma estandarizada.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://api.bancocentral.gov.cl/v1
+    description: Servidor de producción
+  - url: https://api-staging.bancocentral.gov.cl/v1
+    description: Servidor de staging
+security:
+  - ApiKeyAuth: []
+paths:
+  /offchain/contracts/{contractId}/metadata:
+    get:
+      operationId: getContractMetadata
+      summary: Obtener metadata de un contrato inteligente
+      parameters:
+        - name: contractId
+          in: path
+          required: true
+          description: ID del contrato inteligente
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: false
+          description: Fecha de inicio para filtrar resultados
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          description: Fecha de fin para filtrar resultados
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Metadata del contrato inteligente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractMetadata'
+              examples:
+                contract_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    name: "Contrato de Ejemplo"
+                    version: "1.0"
+                    parameters:
+                      - name: "param1"
+                        type: "string"
+                        value: "valor1"
+        '404':
+          description: Contrato no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /offchain/transactions/{txHash}/details:
+    get:
+      operationId: getTransactionDetails
+      summary: Obtener detalles de una transacción
+      parameters:
+        - name: txHash
+          in: path
+          required: true
+          description: Hash de la transacción
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: false
+          description: Fecha de inicio para filtrar resultados
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          description: Fecha de fin para filtrar resultados
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Detalles de la transacción
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetails'
+              examples:
+                transaction_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    txHash: "abc123"
+                    details:
+                      businessData: "Datos de negocio"
+                      multiSignature: true
+        '404':
+          description: Transacción no encontrada
+        '500':
+          description: Error interno del servidor
+
+  /offchain/prices/{asset}:
+    get:
+      operationId: getAssetPrice
+      summary: Obtener precio de un activo
+      parameters:
+        - name: asset
+          in: path
+          required: true
+          description: Nombre del activo
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          required: false
+          description: Fecha de inicio para filtrar resultados
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          description: Fecha de fin para filtrar resultados
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Precio del activo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceReference'
+              examples:
+                price_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    asset: "BTC"
+                    price: 45000.00
+        '404':
+          description: Activo no encontrado
+        '500':
+          description: Error interno del servidor
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ContractMetadata:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              value:
+                type: string
+
+    TransactionDetails:
+      type: object
+      properties:
+        txHash:
+          type: string
+        details:
+          type: object
+          properties:
+            businessData:
+              type: string
+            multiSignature:
+              type: boolean
+
+    PriceReference:
+      type: object
+      properties:
+        asset:
+          type: string
+        price:
+          type: number
+          format: float

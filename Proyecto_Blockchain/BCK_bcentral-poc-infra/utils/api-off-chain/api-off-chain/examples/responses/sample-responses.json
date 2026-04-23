@@ -1,0 +1,26 @@
+{
+  "contractMetadata": {
+    "name": "Example Contract",
+    "version": "1.0.0",
+    "parameters": {
+      "owner": "0x1234567890abcdef1234567890abcdef12345678",
+      "maxSupply": 1000000
+    }
+  },
+  "transactionDetails": {
+    "txHash": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+    "businessData": {
+      "customerId": "12345",
+      "orderId": "67890"
+    },
+    "multiSignatures": [
+      "0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef",
+      "0x1234567890abcdef1234567890abcdef12345678"
+    ]
+  },
+  "priceReference": {
+    "asset": "BTC",
+    "value": 45000,
+    "timestamp": "2023-10-01T12:00:00Z"
+  }
+}

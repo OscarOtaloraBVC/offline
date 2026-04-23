@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+  description: API para exponer datos complementarios de la blockchain a sistemas
+    internos y externos de forma estandarizada.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: API Off-Chain del Banco Central
+  version: 1.0.0
+servers:
+- description: Servidor de producción
+  url: https://api.bancocentral.gov.cl/v1
+- description: Servidor de staging
+  url: https://api-staging.bancocentral.gov.cl/v1
+security:
+- ApiKeyAuth: []
+paths:
+  /offchain/contracts/{contractId}/metadata:
+    get:
+      operationId: getContractMetadata
+      parameters:
+      - description: ID del contrato inteligente
+        explode: false
+        in: path
+        name: contractId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Fecha de inicio para filtrar resultados
+        explode: true
+        in: query
+        name: fromDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: Fecha de fin para filtrar resultados
+        explode: true
+        in: query
+        name: toDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                contract_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    name: Contrato de Ejemplo
+                    version: "1.0"
+                    parameters:
+                    - name: param1
+                      type: string
+                      value: valor1
+              schema:
+                $ref: "#/components/schemas/ContractMetadata"
+          description: Metadata del contrato inteligente
+        "404":
+          description: Contrato no encontrado
+        "500":
+          description: Error interno del servidor
+      summary: Obtener metadata de un contrato inteligente
+  /offchain/transactions/{txHash}/details:
+    get:
+      operationId: getTransactionDetails
+      parameters:
+      - description: Hash de la transacción
+        explode: false
+        in: path
+        name: txHash
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Fecha de inicio para filtrar resultados
+        explode: true
+        in: query
+        name: fromDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: Fecha de fin para filtrar resultados
+        explode: true
+        in: query
+        name: toDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                transaction_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    txHash: abc123
+                    details:
+                      businessData: Datos de negocio
+                      multiSignature: true
+              schema:
+                $ref: "#/components/schemas/TransactionDetails"
+          description: Detalles de la transacción
+        "404":
+          description: Transacción no encontrada
+        "500":
+          description: Error interno del servidor
+      summary: Obtener detalles de una transacción
+  /offchain/prices/{asset}:
+    get:
+      operationId: getAssetPrice
+      parameters:
+      - description: Nombre del activo
+        explode: false
+        in: path
+        name: asset
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Fecha de inicio para filtrar resultados
+        explode: true
+        in: query
+        name: fromDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: Fecha de fin para filtrar resultados
+        explode: true
+        in: query
+        name: toDate
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                price_example:
+                  summary: Ejemplo de respuesta
+                  value:
+                    asset: BTC
+                    price: 45000.0
+              schema:
+                $ref: "#/components/schemas/PriceReference"
+          description: Precio del activo
+        "404":
+          description: Activo no encontrado
+        "500":
+          description: Error interno del servidor
+      summary: Obtener precio de un activo
+components:
+  schemas:
+    ContractMetadata:
+      example:
+        name: name
+        version: version
+        parameters:
+        - name: name
+          type: type
+          value: value
+        - name: name
+          type: type
+          value: value
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        parameters:
+          items:
+            $ref: "#/components/schemas/ContractMetadata_parameters_inner"
+          type: array
+      type: object
+    TransactionDetails:
+      example:
+        details:
+          businessData: businessData
+          multiSignature: true
+        txHash: txHash
+      properties:
+        txHash:
+          type: string
+        details:
+          $ref: "#/components/schemas/TransactionDetails_details"
+      type: object
+    PriceReference:
+      example:
+        price: 0.8008282
+        asset: asset
+      properties:
+        asset:
+          type: string
+        price:
+          format: float
+          type: number
+      type: object
+    ContractMetadata_parameters_inner:
+      example:
+        name: name
+        type: type
+        value: value
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+      type: object
+    TransactionDetails_details:
+      example:
+        businessData: businessData
+        multiSignature: true
+      properties:
+        businessData:
+          type: string
+        multiSignature:
+          type: boolean
+      type: object
+  securitySchemes:
+    ApiKeyAuth:
+      in: header
+      name: X-API-Key
+      type: apiKey

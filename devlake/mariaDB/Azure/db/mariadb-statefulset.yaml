@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: devlake-mariadb
+  namespace: devlake-mariadb
+spec:
+  serviceName: "devlake-mariadb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      # Para AKS, Forzar scheduling en el único nodo schedulable sin taints.
+      # vmss00001c: ~546m CPU libres y ~4.6Gi RAM libres.
+      # vmss00001d está cordoned. vmss00000k y vmss00000p tienen taints dedicados.
+      nodeSelector:
+        kubernetes.io/hostname: aks-pool1-11548068-vmss00001c
+      containers:
+      - name: mariadb
+        image: mariadb:10.6
+        # --- Ajuste Recursos Base de datos.
+        # --- Recursos ajustados a la capacidad real de vmss00001c.
+        resources:
+          requests:
+            cpu: "400m"      # Reserva 1 núcleo completo para la DB, deseable (cpu: "1000m")
+            memory: "2Gi"     # Reserva suficiente para el buffer pool y logs, deseable (memory: "6Gi")
+          limits:
+            cpu: "1600m"      # Permite escalar hasta 2 núcleos si es necesario, deseable (cpu: "2000m")
+            memory: "4Gi"    # Límite superior para evitar reinicios por OOM, deseable (memory: "10Gi") 
+        # -------------------------------
+        # --- Ajuste Definicion de caracteres de Base de datos.
+        args:
+        - "--character-set-server=utf8mb4"
+        - "--collation-server=utf8mb4_unicode_ci"
+        # -------------------------------
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-root-password
+        - name: MARIADB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-database
+        - name: MARIADB_USER
+          value: "devlake"
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-password
+        ports:
+        - containerPort: 3306
+          name: mariadb
+        volumeMounts:
+        - name: mariadb-storage
+          mountPath: /var/lib/mysql
+        - name: mariadb-config-volume
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
+      volumes:
+      - name: mariadb-config-volume
+        configMap:
+          name: mariadb-config
+  volumeClaimTemplates:
+  - metadata:
+      name: mariadb-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      # --- En AKS los StorageClass de Azure Managed Disk (premium SSD).
+      # Opciones disponibles son:
+      #   managed-csi          → Azure Disk Standard SSD (default)
+      #   managed-csi-premium  → Azure Disk Premium SSD (recomendado para DB)
+      storageClassName: managed-csi
+      resources:
+        requests:
+          storage: 10Gi

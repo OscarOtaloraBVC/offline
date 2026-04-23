@@ -1,0 +1,54 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ambassador-mapping-access
+  #namespace: testnet-01
+rules:
+  - apiGroups: ["getambassador.io"]
+    resources: ["mappings", "listeners", "tcpmappings", "hosts", "tlscontexts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ambassador-mapping-access-bevel-auth
+  #namespace: testnet-01
+subjects:
+  - kind: ServiceAccount
+    name: bevel-auth
+    #namespace: testnet-01
+roleRef:
+  kind: Role
+  name: ambassador-mapping-access
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ambassador-mapping-access-user
+  #namespace: testnet-01
+subjects:
+  - kind: User
+    name: hbustamante
+    #namespace: testnet-01
+roleRef:
+  kind: Role
+  name: ambassador-mapping-access
+  apiGroup: rbac.authorization.k8s.io
+
+---
+#apiVersion: rbac.authorization.k8s.io/v1
+#kind: RoleBinding
+#metadata:
+#  name: ambassador-mapping-access-sa2
+#  namespace: {{ .Release.Namespace }}
+#subjects:
+#  - kind: ServiceAccount
+#    name: sa2
+#    namespace: {{ .Release.Namespace }}
+#roleRef:
+#  kind: Role
+#  name: ambassador-mapping-access
+#  apiGroup: rbac.authorization.k8s.io

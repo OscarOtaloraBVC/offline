@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: devlake-mariadb
+  namespace: devlake-mariadb
+spec:
+  serviceName: "devlake-mariadb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k3d-devlake-server-0
+      containers:
+      - name: mariadb
+        image: mariadb:10.6
+        # --- Ajuste Recusros Base de datos.
+        resources:
+          requests:
+            cpu: "1000m"      # Reserva 1 núcleo completo para la DB
+            memory: "6Gi"     # Reserva suficiente para el buffer pool y logs
+          limits:
+            cpu: "2000m"      # Permite escalar hasta 2 núcleos si es necesario
+            memory: "10Gi"    # Límite superior para evitar reinicios por OOM
+        # -------------------------------
+        # --- Ajuste Definicion de caracteres de Base de datos.
+        args:
+        - "--character-set-server=utf8mb4"
+        - "--collation-server=utf8mb4_unicode_ci"
+        # -------------------------------
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-root-password
+        - name: MARIADB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-database
+        - name: MARIADB_USER
+          value: "devlake"
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-auth
+              key: mariadb-password
+        ports:
+        - containerPort: 3306
+          name: mariadb
+        volumeMounts:
+        - name: mariadb-storage
+          mountPath: /var/lib/mysql
+        - name: mariadb-config-volume
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
+      volumes:
+      - name: mariadb-config-volume
+        configMap:
+          name: mariadb-config
+  volumeClaimTemplates:
+  - metadata:
+      name: mariadb-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

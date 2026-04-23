@@ -1,0 +1,37 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: 1.0.2
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+  values:
+    mysql:
+      enabled: true
+      auth:
+        existingSecret: "devlake-mysql-auth"
+    lake:
+      encryptionSecret:
+        secretName: "encryption-secret"
+        secret: "ENCODE_KEY"
+      db:
+        useExternal: true
+        secretName: "postgres-devlake-user"
+        userName: "devlake" 
+        passwordConfig:
+          secretName: "postgres-devlake-user"
+          passwordKey: "password"
+        database: "lake"
+    ingress:
+      enabled: true
+      hosts:
+        - host: devlake.nuam.com

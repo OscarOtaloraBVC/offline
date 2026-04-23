@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secrets.yaml
+# Despliegue  cloudnative-pg
+  - ./db/repo.yaml
+  - ./db/release-operator.yaml
+  #- ./db/pg-secret.yaml
+  - ./db/pg-cluster.yaml
+  - ./db/pg-pooler.yaml
+# Despliegue  devlake
+  - ./devlake/helmrepo.yaml 
+  #- ./devlake/secret.yaml
+  - ./devlake/release.yaml
+  - ./alerting/alertmanagerconfig_devlake.yaml

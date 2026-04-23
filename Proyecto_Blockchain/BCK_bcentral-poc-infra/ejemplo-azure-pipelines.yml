@@ -1,0 +1,27 @@
+# TRIGGERS: Define en qué ramas se ejecutará automáticamente este pipeline
+trigger:
+  branches:
+    include:
+      - main       # Rama principal, normalmente usada para producción
+      - develop    # Rama de desarrollo, usada para integración continua
+      - feature/*  # Cualquier rama que comience con "feature/", usada para nuevas funcionalidades
+
+# POOL: Define el entorno de ejecución del pipeline
+pool:
+  vmImage: 'ubuntu-latest'  # Usa una máquina virtual con Ubuntu actualizado para ejecutar los pasos
+
+# VARIABLES: Define variables reutilizables en el pipeline
+variables:
+  buildConfiguration: 'Release'  # Configuración de compilación, puede ser 'Debug' o 'Release'
+
+# STEPS: Lista de pasos que se ejecutarán en el pipeline
+steps:
+  - task: Checkout@1
+    displayName: 'Checkout repository'  # Paso para clonar el repositorio en el agente de build
+
+  - script: echo "Running build for $(Build.Repository.Name)"
+    displayName: 'Build step'  # Simula el paso de compilación del proyecto
+  - script: echo "Running tests..."
+    displayName: 'Test step'  # Simula la ejecución de pruebas
+  - script: echo "Deploying if necessary..."
+    displayName: 'Deploy step'  # Simula el despliegue del proyecto (puede incluir condiciones reales)

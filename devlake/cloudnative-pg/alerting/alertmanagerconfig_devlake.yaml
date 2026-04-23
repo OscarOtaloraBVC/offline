@@ -1,0 +1,68 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: devlake-alertmanager-config
+  namespace: devlake-cloudnative-pg
+  labels: 
+    alertmanagerConfig: "enabled"
+spec:
+  route:
+    receiver: 'default-teams'
+    groupBy: ['alertname', 'cluster', 'service', 'namespace', 'node']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 3h
+    routes:
+      # CRITICAL: enviar a Teams y Email
+      - receiver: "critical-teams-and-email"
+        matchers:
+          - name: severity
+            value: critical
+            matchType: "="
+      # WARNING: solo email
+      - receiver: "warning-email"
+        matchers:
+          - name: severity
+            value: warning
+            matchType: "="
+      # INFO: solo Teams
+      - receiver: "info-teams"
+        matchers:
+          - name: severity
+            value: info
+            matchType: "="
+  receivers:
+    - name: 'default-teams'
+      webhookConfigs:
+        - url: 'http://prometheus-msteams.monitoring.svc:2000/alertmanager-teams'
+          sendResolved: true
+          # CRITICAL: enviar a Teams y Email (dos entradas dentro del mismo receiver)
+    - name: 'critical-teams-and-email'
+      webhookConfigs:
+        - url: http://prometheus-msteams.monitoring.svc:2000/alertmanager-teams'
+          sendResolved: true
+      emailConfigs:
+        - to: 'oncall@tudominio.com'
+          from: 'alertas@tudominio.com'
+          smarthost: 'smtp.office365.com:587'
+          requireTLS: true
+          authUsername: 'user@mail.com'
+          authPassword:
+            name: smtp-secret
+            key: smtp_auth_password
+    # WARNING: solo email
+    - name: 'warning-email'
+      emailConfigs:
+        - to: 'sre@tudominio.com'
+          from: 'alertas@tudominio.com'
+          smarthost: 'smtp.office365.com:587'
+          requireTLS: true
+          authUsername: 'user@mail.com'
+          authPassword:
+            name: smtp-secret
+            key: smtp_auth_password
+    # INFO: solo Teams
+    - name: 'info-teams'
+      webhookConfigs:
+        - url: 'http://prometheus-msteams.monitoring.svc:2000/alertmanager-teams'
+          sendResolved: true

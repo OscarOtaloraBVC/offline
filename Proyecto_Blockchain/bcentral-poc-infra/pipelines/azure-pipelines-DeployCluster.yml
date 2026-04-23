@@ -1,0 +1,144 @@
+#Limita la ejecución, Solo se ejecuta el pipeline relacionado con las ramas y los archivos modificados (Rama: main path: infra/**).
+#trigger:
+#  branches:
+#    include:
+#      - main
+#  paths:
+#    include:
+#      - infra/**
+
+#No se ejecuta automáticamente con el cambio de alguna rama
+trigger: none
+
+variables:
+  - group: Deploy_Cluster
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Terraform_plan
+    displayName: Terraform Plan
+    jobs:
+      - job: Plan
+        displayName: Plan
+        continueOnError: false
+        steps:
+          - checkout: self
+
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: '1.6.6'
+            displayName: Install Terraform
+
+          - task: AzureCLI@2
+            displayName: Terraform init / validate / plan (OIDC via Service Connection)
+            inputs:
+              azureSubscription: 'sc-nuam-dev-bcentral'
+              scriptType: bash
+              scriptLocation: inlineScript
+              workingDirectory: '$(System.DefaultWorkingDirectory)/utils/00-terraform'
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+
+                # Asegura que estás en la suscripción correcta
+                SUB_ID="$(az account show --query id -o tsv)"
+                az account set --subscription "$SUB_ID"
+
+                # --- Autenticación Terraform azurerm via OIDC ---
+                export ARM_USE_OIDC=true
+                export ARM_CLIENT_ID="$servicePrincipalId"
+                export ARM_TENANT_ID="$tenantId"
+                export ARM_SUBSCRIPTION_ID="$SUB_ID"
+
+                # AzureCLI@2 (OIDC) normalmente expone el token en un archivo
+                # Si existe AZURE_FEDERATED_TOKEN_FILE, úsalo para azurerm provider
+                if [ -n "${AZURE_FEDERATED_TOKEN_FILE:-}" ] && [ -f "$AZURE_FEDERATED_TOKEN_FILE" ]; then
+                  export ARM_OIDC_TOKEN_FILE="$AZURE_FEDERATED_TOKEN_FILE"
+                fi
+
+                # Terraform no interactivo
+                export TF_IN_AUTOMATION=true
+                export TF_VAR_flux_git_token="$(FLUX_GIT_TOKEN)"
+
+                echo "==> terraform init (remote backend)"
+                terraform init \
+                  -backend-config="resource_group_name=BCC-primary-Blockchain-group" \
+                  -backend-config="storage_account_name=sabcentral" \
+                  -backend-config="container_name=terraform" \
+                  -backend-config="key=pipeline.tfstate"
+
+                echo "==> terraform validate"
+                terraform validate
+
+                echo "==> terraform plan"
+                terraform plan -input=false -out plan.out
+            env:
+              FLUX_GIT_TOKEN: $(FLUX_GIT_TOKEN)
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/utils/00-terraform/plan.out'
+              artifact: 'Plan'
+              publishLocation: 'pipeline'
+            displayName: Publish Plan Artifact
+
+  - stage: Terraform_apply
+    displayName: Terraform Apply
+    dependsOn: Terraform_plan
+    jobs:
+      - job: Deploy
+        displayName: Apply
+        continueOnError: false
+        steps:
+          - checkout: self
+
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: '1.6.6'
+            displayName: Install Terraform
+
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: 'Plan'
+              path: '$(System.DefaultWorkingDirectory)/utils/00-terraform'
+            displayName: Download Plan Artifact
+
+          - task: AzureCLI@2
+            displayName: Terraform init / apply (OIDC via Service Connection)
+            inputs:
+              azureSubscription: 'sc-nuam-dev-bcentral'
+              scriptType: bash
+              scriptLocation: inlineScript
+              workingDirectory: '$(System.DefaultWorkingDirectory)/utils/00-terraform'
+              addSpnToEnvironment: true
+              inlineScript: |
+                set -euo pipefail
+
+                SUB_ID="$(az account show --query id -o tsv)"
+                az account set --subscription "$SUB_ID"
+
+                export ARM_USE_OIDC=true
+                export ARM_CLIENT_ID="$servicePrincipalId"
+                export ARM_TENANT_ID="$tenantId"
+                export ARM_SUBSCRIPTION_ID="$SUB_ID"
+
+                if [ -n "${AZURE_FEDERATED_TOKEN_FILE:-}" ] && [ -f "$AZURE_FEDERATED_TOKEN_FILE" ]; then
+                  export ARM_OIDC_TOKEN_FILE="$AZURE_FEDERATED_TOKEN_FILE"
+                fi
+
+                export TF_IN_AUTOMATION=true
+                export TF_VAR_flux_git_token="$(FLUX_GIT_TOKEN)"
+
+                echo "==> terraform init (remote backend)"
+                terraform init \
+                  -backend-config="resource_group_name=BCC-primary-Blockchain-group" \
+                  -backend-config="storage_account_name=sabcentral" \
+                  -backend-config="container_name=terraform" \
+                  -backend-config="key=pipeline.tfstate"
+
+                echo "==> terraform apply"
+                terraform apply -input=false "plan.out"
+            env:
+              FLUX_GIT_TOKEN: $(FLUX_GIT_TOKEN)

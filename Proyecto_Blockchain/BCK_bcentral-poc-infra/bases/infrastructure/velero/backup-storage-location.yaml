@@ -1,0 +1,18 @@
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: backup-devops-prod
+  namespace: velero
+spec:
+  provider: velero.io/azure
+  objectStorage:
+    bucket: velero-backups-prod
+  config:
+    resourceGroup: devops-prod-group
+    storageAccount: velerodevopsprod
+    storageAccountKeyEnvVar: AZURE_STORAGE_ACCOUNT_ACCESS_KEY
+    subscriptionId: 4056f4eb-d2a0-4d19-bc6e-064fba6bec58
+  credential:
+    name: credentials-azure-prod
+    key: cloud

@@ -1,0 +1,12 @@
+{
+  "apiUrl": "http://localhost:3000",
+  "retryAttempts": 3,
+  "retryDelay": 1000,
+  "rpcUrl": "ws://localhost:8546",
+  "contracts": [
+    {
+      "address": "0xB31768832dd4cf330b929b45a2C83720b8CEF468",
+      "events": ["Transfer", "Approval"]
+    }
+  ]
+}

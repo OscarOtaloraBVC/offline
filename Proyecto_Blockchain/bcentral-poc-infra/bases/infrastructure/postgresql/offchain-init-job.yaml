@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: offchain-db-init
+  namespace: postgresql
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+      - name: db-init
+        image: postgres:15
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo "Esperando a PostgreSQL..."
+            until pg_isready -h postgresql-service -p 5432 -U admin; do
+              sleep 3
+            done
+
+            echo "Ejecutando esquema..."
+            PGPASSWORD="$POSTGRES_PASSWORD" psql \
+              -h postgresql-service \
+              -U admin \
+              -d offchain_db \
+              -f /sql/offchain_schema.sql
+
+            echo "Poblando datos..."
+            PGPASSWORD="$POSTGRES_PASSWORD" psql \
+              -h postgresql-service \
+              -U admin \
+              -d offchain_db \
+              -f /sql/poblar_datos.sql
+
+            echo "Finalizado."
+
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: POSTGRES_PASSWORD
+
+        volumeMounts:
+        - name: sql-files
+          mountPath: /sql
+
+      volumes:
+      - name: sql-files
+        configMap:
+          name: offchain-sql-files

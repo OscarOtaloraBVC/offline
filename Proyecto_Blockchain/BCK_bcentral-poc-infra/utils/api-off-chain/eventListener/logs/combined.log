@@ -1,0 +1,87 @@
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T14:28:31.234Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T14:28:31.250Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T14:28:31.251Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T14:28:31.252Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Approval\"}","timestamp":"2025-11-27T14:28:31.252Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T14:28:31.252Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T14:28:49.736Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":1,\"maxRetries\":3,\"delayMs\":1000}","timestamp":"2025-11-27T14:28:49.736Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T14:28:51.545Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":2,\"maxRetries\":3,\"delayMs\":2000}","timestamp":"2025-11-27T14:28:51.546Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T14:28:54.343Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":3,\"maxRetries\":3,\"delayMs\":4000}","timestamp":"2025-11-27T14:28:54.343Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T14:28:59.142Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T18:57:03.133Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T18:57:03.149Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T18:57:03.150Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T18:57:03.150Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Approval\"}","timestamp":"2025-11-27T18:57:03.150Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T18:57:03.150Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"responseTimeMs\":1059}","timestamp":"2025-11-27T18:57:30.123Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"eventId\":\"Transfer\",\"transactionHash\":\"0x15c44ab226d8eabff2cae292bc4cf254287d14c123a86a78c28719d69256fe58\"}","timestamp":"2025-11-27T18:57:30.123Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T18:57:39.708Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":1,\"maxRetries\":3,\"delayMs\":1000}","timestamp":"2025-11-27T18:57:39.709Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T18:57:41.766Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":2,\"maxRetries\":3,\"delayMs\":2000}","timestamp":"2025-11-27T18:57:41.767Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T18:57:44.724Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":3,\"maxRetries\":3,\"delayMs\":4000}","timestamp":"2025-11-27T18:57:44.725Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T18:57:49.683Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T19:01:22.420Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T19:01:22.435Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T19:01:22.436Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T19:01:22.436Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Approval\"}","timestamp":"2025-11-27T19:01:22.436Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T19:01:22.436Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"responseTimeMs\":1023}","timestamp":"2025-11-27T19:01:40.075Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"eventId\":\"Transfer\",\"transactionHash\":\"0x762614b70e6af1a419af67b91405869fab88db9f6fa30f4926bbe00d78b2b108\"}","timestamp":"2025-11-27T19:01:40.076Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:06:30.126Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":1,\"maxRetries\":3,\"delayMs\":1000}","timestamp":"2025-11-27T19:06:30.127Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:06:32.147Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":2,\"maxRetries\":3,\"delayMs\":2000}","timestamp":"2025-11-27T19:06:32.147Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:06:35.201Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":3,\"maxRetries\":3,\"delayMs\":4000}","timestamp":"2025-11-27T19:06:35.201Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:06:40.208Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T19:13:22.137Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T19:13:22.151Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T19:13:22.152Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T19:13:22.153Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0x44F146e3EfFA7404d21A4c446c5c0F92B71B1CA4\",\"event\":\"Approval\"}","timestamp":"2025-11-27T19:13:22.153Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T19:13:22.153Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:13:40.124Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":1,\"maxRetries\":3,\"delayMs\":1000}","timestamp":"2025-11-27T19:13:40.124Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:13:42.161Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":2,\"maxRetries\":3,\"delayMs\":2000}","timestamp":"2025-11-27T19:13:42.162Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:13:45.152Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":3,\"maxRetries\":3,\"delayMs\":4000}","timestamp":"2025-11-27T19:13:45.152Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T19:13:50.136Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T19:57:47.792Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T19:57:47.819Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T19:57:47.823Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T19:57:47.824Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Approval\"}","timestamp":"2025-11-27T19:57:47.825Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T19:57:47.825Z"}
+{"level":"error","message":"{\"status\":\"error\",\"message\":\"Error escuchando evento Transfer: Failed to subscribe.\"}","timestamp":"2025-11-27T19:58:12.867Z"}
+{"level":"error","message":"{\"status\":\"error\",\"message\":\"Error escuchando evento Approval: Failed to subscribe.\"}","timestamp":"2025-11-27T19:58:12.868Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T20:02:38.594Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T20:02:38.616Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T20:02:38.619Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T20:02:38.620Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Approval\"}","timestamp":"2025-11-27T20:02:38.621Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T20:02:38.621Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T20:21:03.977Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":1,\"maxRetries\":3,\"delayMs\":1000}","timestamp":"2025-11-27T20:21:03.977Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T20:21:05.449Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":2,\"maxRetries\":3,\"delayMs\":2000}","timestamp":"2025-11-27T20:21:05.450Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T20:21:07.887Z"}
+{"level":"info","message":"{\"status\":\"retry\",\"attempt\":3,\"maxRetries\":3,\"delayMs\":4000}","timestamp":"2025-11-27T20:21:07.888Z"}
+{"level":"info","message":"{\"status\":\"error\",\"message\":\"Request failed with status code 500\"}","timestamp":"2025-11-27T20:21:12.510Z"}
+{"level":"info","message":"{\"status\":\"started\",\"message\":\"Listener - Server running on port 3001\"}","timestamp":"2025-11-27T22:13:46.577Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Transfer\"}","timestamp":"2025-11-27T22:13:46.602Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Transfer\"}","timestamp":"2025-11-27T22:13:46.605Z"}
+{"level":"info","message":"{\"status\":\"listening\",\"contractAddress\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"eventName\":\"Approval\"}","timestamp":"2025-11-27T22:13:46.607Z"}
+{"level":"info","message":"{\"status\":\"initialized\",\"contract\":\"0xB31768832dd4cf330b929b45a2C83720b8CEF468\",\"event\":\"Approval\"}","timestamp":"2025-11-27T22:13:46.607Z"}
+{"level":"info","message":"{\"status\":\"success\",\"message\":\"Event listeners initialized successfully\"}","timestamp":"2025-11-27T22:13:46.607Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"responseTimeMs\":1074}","timestamp":"2025-11-27T22:15:24.190Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"eventId\":\"Transfer\",\"transactionHash\":\"0x8704205c01ab3ffb00757da434eed47645d1c8929305787aa6918ec3ad66844b\"}","timestamp":"2025-11-27T22:15:24.190Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"responseTimeMs\":279}","timestamp":"2025-11-27T22:15:43.414Z"}
+{"level":"info","message":"{\"status\":\"sent\",\"eventId\":\"Approval\",\"transactionHash\":\"0x79f353a971cd96b27ab0415bb5380dbfea7865b8fbe10e72de86817e7522522e\"}","timestamp":"2025-11-27T22:15:43.415Z"}
