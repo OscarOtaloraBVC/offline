@@ -1,0 +1,18 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: all
+  disable:
+    - exhaustruct
+    - wrapcheck
+    - depguard
+    - perfsprint
+    - wsl
+    - err113
+    - paralleltest
+    - testpackage
+    - testifylint
+    - revive
