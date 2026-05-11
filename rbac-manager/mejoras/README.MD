@@ -2,7 +2,7 @@
 
 ```text
 +-----------------------------------+             +-----------------------------------+
-|    Cluster 1 (Primary Region)     |             |   Cluster 2 (Secondary Region)    |
+|    Cluster 1 (Primary)            |             |   Cluster 2 (Secondary)           |
 |                                   |             |                                   |
 |  [Certificados] <--(Eventos)-->   |             |  [Certificados] <--(Eventos)-->   |
 |        |                          |             |        |                          |
@@ -11,6 +11,6 @@
             |                                                      |
             |               +------------------------+             |
             +-------------- | Capa de Sincronización | ------------+
-                            |         Litestream     |
+                            |      Litestream        |
                             +------------------------+
 ```

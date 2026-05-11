@@ -1,0 +1,18 @@
+import axios from 'axios';
+
+
+let dynamicBaseURL='http://'+window.location.host+'/api/v1';
+
+const apiClient = axios.create({
+  //baseURL: process.env.REACT_APP_API_BASE_URL, 
+  baseURL: 'http://localhost:8000/api/v1', 
+  //baseURL: dynamicBaseURL, 
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// You can add interceptors for request/response handling here if needed
+// e.g., for adding auth tokens or global error handling
+
+export default apiClient;

@@ -1,0 +1,76 @@
+.app-header {
+  background-color: #282c34; /* Dark grey */
+  padding: 10px 20px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  height: 40px; /* Adjust as needed */
+  margin-right: 15px;
+}
+
+.app-title {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+.main-nav ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.main-nav li {
+  position: relative; /* For dropdown positioning */
+}
+
+.main-nav li > span,
+.main-nav li > a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  cursor: pointer; /* For non-link dropdown triggers */
+}
+
+.main-nav li > span:hover,
+.main-nav li > a:hover {
+  background-color: #1e2228; /* Slightly darker */
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  left: 0; /* Align with parent */
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+.main-nav li:hover .dropdown-content {
+  display: block;
+}

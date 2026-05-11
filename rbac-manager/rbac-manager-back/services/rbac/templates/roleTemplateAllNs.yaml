@@ -1,0 +1,9 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: $role_name
+  namespace: $namespace
+rules:
+- apiGroups: ["","*"]  # "" indica el core API group
+  resources: ["*"]
+  verbs: ["*"]

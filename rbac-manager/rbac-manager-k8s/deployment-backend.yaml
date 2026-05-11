@@ -20,12 +20,13 @@ spec:
       # ------------------------
       serviceAccountName: rbac-manager-serviceaccount
       
-      imagePullSecrets:
-      - name: harbor-credentials      
+      # imagePullSecrets:
+      # - name: harbor-credentials      
       
       containers:
       - name: rbac-manager-backend
-        image: registry.nuamexchange.com/transversal-nuam/rbac-manager-backend:0.0.1-alpha.1
+        #image: registry.nuamexchange.com/transversal-nuam/rbac-manager-backend:0.0.1-alpha.1
+        image: rbac-registry:5000/rbac-man-mejor-back:2.3
         imagePullPolicy: Always
         env:  
           - name: RBAC_DB_SQLITE3_PATH

@@ -14,11 +14,12 @@ spec:
         app: rbac-frontend
     spec:
 
-      imagePullSecrets:
-      - name: harbor-credentials
+      # imagePullSecrets:
+      # - name: harbor-credentials
 
       containers:
       - name: rbac-manager-frontend
-        image: registry.nuamexchange.com/transversal-nuam/rbac-manager-frontend:0.0.1-alpha.1 
+        #image: registry.nuamexchange.com/transversal-nuam/rbac-manager-frontend:0.0.1-alpha.1
+        image: rbac-registry:5000/rbac-man-mejor-front:2.2
         ports:
           - containerPort: 80
