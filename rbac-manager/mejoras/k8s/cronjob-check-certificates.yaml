@@ -1,0 +1,20 @@
+# k8s/cronjob-check-certificates.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: check-certificate-expiry
+  namespace: rbac-manager
+spec:
+  schedule: "0 * * * *"  # Cada hora
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: checker
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - curl -X GET http://rbac-manager-backend:8000/api/v1/alerts/check-expiring
+          restartPolicy: OnFailure
