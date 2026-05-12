@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import appLogo from '../assets/logo.png'; // Make sure you have this image
+import CertificateSummary from './CertificateSummary';
 import '../App.css'; // For specific menu styling
 
 const TopMenu = () => {
@@ -10,8 +11,9 @@ const TopMenu = () => {
         <img src={appLogo} alt="App Logo" className="app-logo" />
         <h1 style={{ color: "white" }}>RBAC Manager</h1>
       </div>
-      <nav className="main-nav">
-        <ul>
+      {/* Menú centrado - usando flex con espacio entre */}
+      <nav className="main-nav" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <ul style={{ display: 'flex', margin: 0, padding: 0, listStyle: 'none' }}>
           <li>
             <Link to="/">Home</Link> {/* Direct link to the homepage */}
           </li>
@@ -37,6 +39,13 @@ const TopMenu = () => {
           </li>
         </ul>
       </nav>
+
+      
+      {/* Resumen de certificados - fijo a la derecha */}
+      <div style={{ marginLeft: 'auto', minWidth: 'fit-content' }}>
+        <CertificateSummary />
+      </div>
+
     </header>
   );
 };

@@ -115,7 +115,10 @@ baseURL: 'http://localhost:8000/api/v1'
 - Se adicionan elementos para la identificacion de certificados proximos a expirar.
 
 ```text
+
 └── src
+    ├── components
+    │   └── CertificateSummary.js
     ├── pages
     │   └── alerts
     │       └── CertificateAlertsPage.js
