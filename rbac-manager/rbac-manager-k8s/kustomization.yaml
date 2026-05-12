@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: rbac-manager
 resources:
   - namespace.yaml
+  - smtp-secrets.yaml 
   - env-configmap.yaml
   - pvc.yaml
   - deployment-backend.yaml

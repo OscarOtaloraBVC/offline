@@ -26,7 +26,7 @@ spec:
       containers:
       - name: rbac-manager-backend
         #image: registry.nuamexchange.com/transversal-nuam/rbac-manager-backend:0.0.1-alpha.1
-        image: rbac-registry:5000/rbac-man-mejor-back:2.3
+        image: rbac-registry:5000/rbac-man-alert-back:2.6
         imagePullPolicy: Always
         env:  
           - name: RBAC_DB_SQLITE3_PATH
@@ -54,7 +54,33 @@ spec:
               configMapKeyRef:
                 name: env-configmap
                 key: RBAC_CLUSTER_CA_CRT_PATH
-        
+          # VARIABLES SMTP
+          - name: SMTP_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: SMTP_HOST
+          - name: SMTP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: SMTP_PORT
+          - name: SMTP_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp-secrets
+                key: SMTP_USER
+          - name: SMTP_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp-secrets
+                key: SMTP_PASSWORD
+          - name: SMTP_FROM
+            valueFrom:
+              configMapKeyRef:
+                name: env-configmap
+                key: SMTP_FROM
+
         volumeMounts:
           - name: rbac-data-storage
             mountPath: /opt/rbac-manager/data

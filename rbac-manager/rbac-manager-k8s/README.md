@@ -121,4 +121,4 @@ kubectl port-forward svc/rbac-manager-backend 8000:8000 -n rbac-manager
 
 - Ingregar a
 
-http://localhost:8080/ui/
+<http://localhost:8080/ui/>

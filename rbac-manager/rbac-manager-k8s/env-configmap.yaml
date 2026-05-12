@@ -10,3 +10,8 @@ data:
   RBAC_CLUSTER_URL: https://0.0.0.0:45711
   RBAC_CLUSTER_CA_CRT_PATH: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt 
   RBAC_ADDITIONAL_RESOURCES: '[{"namespaced": true, "resource": "pods/exec", "apiversion": "v1"}, {"namespaced": true, "resource": "pods/portforward", "apiversion": "v1"}, {"namespaced": true, "resource": "pods/log", "apiversion": "v1"}, {"namespaced": true, "resource": "pods/proxy", "apiversion": "v1"}]'
+
+# CONFIGURACIÓN SMTP
+  SMTP_HOST: email-smtp.us-east-1.amazonaws.com
+  SMTP_PORT: "587"
+  SMTP_FROM: rbac.manager@alertas.nuamx.com

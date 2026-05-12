@@ -54,11 +54,15 @@ def get_expiring_certificates():
             expiry_date = cert_created + timedelta(days=row_dict['cert_days'])
             
             # Calcular días restantes (redondeando hacia arriba)
-            seconds_remaining = (expiry_date - today).total_seconds()
-            days_until = ceil(seconds_remaining / 86400) if seconds_remaining > 0 else 0
+            #seconds_remaining = (expiry_date - today).total_seconds()
+            #days_until = ceil(seconds_remaining / 86400) if seconds_remaining > 0 else 0
+            #days_until = round(seconds_remaining / 86400) if seconds_remaining > 0 else 0
+            days_until = (expiry_date.date() - today.date()).days
+            if days_until < 0:
+                days_until = 0
             
             # Determinar estado visual (solo para UI)
-            if days_until <= 7:
+            if days_until <= 5:
                 status = "critical"
             elif days_until <= 15:
                 status = "warning"

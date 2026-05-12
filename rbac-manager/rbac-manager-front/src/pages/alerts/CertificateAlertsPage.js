@@ -1,25 +1,25 @@
 // frontend/src/pages/alerts/CertificateAlertsPage.js
 import React, { useState, useEffect } from 'react';
 import { getAllUsers } from '../../services/userService';
-import { getUserAlerts, createAlert, deleteAlert } from '../../services/alertService';
-import { getExpiringCertificates } from '../../services/certificateService';  // 👈 Solo de certificateService
+import { useNavigate } from 'react-router-dom';
+import { getUserAlerts, createAlert, deleteAlert, notifyNow } from '../../services/alertService';
+import { getExpiringCertificates } from '../../services/certificateService';  // 👈 CertificateService
 import Swal from 'sweetalert2';
 
 const CertificateAlertsPage = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [selectedDays, setSelectedDays] = useState(7);
+  const [selectedDays, setSelectedDays] = useState(5);
+  const [notificationEmails, setNotificationEmails] = useState('');  // 👈 Notificacion Email
   const [userAlerts, setUserAlerts] = useState({});
   const [expiringCerts, setExpiringCerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const daysOptions = [7, 15, 30, 60, 90];
-
+  const daysOptions = [5, 15, 30, 60, 90];
   useEffect(() => {
     loadAllData();
   }, []);
-
   const loadAllData = async () => {
     setLoading(true);
     try {
@@ -27,7 +27,6 @@ const CertificateAlertsPage = () => {
       const usersRes = await getAllUsers();
       const usersList = usersRes.data || [];
       setUsers(usersList);
-
       // 2. Cargar alertas por usuario
       const alertsMap = {};
       for (const user of usersList) {
@@ -40,11 +39,9 @@ const CertificateAlertsPage = () => {
         }
       }
       setUserAlerts(alertsMap);
-
       // 3. Cargar certificados próximos a vencer (dashboard - solo lectura)
-      const expiringRes = await getExpiringCertificates();  // 👈 Solo esta línea
+      const expiringRes = await getExpiringCertificates();  // 👈 Certificates
       setExpiringCerts(expiringRes.data || []);
-
     } catch (error) {
       console.error('Error loading data:', error);
       Swal.fire('Error', 'Failed to load alerts data', 'error');
@@ -52,26 +49,34 @@ const CertificateAlertsPage = () => {
       setLoading(false);
     }
   };
-
   const handleCreateAlert = async () => {
     if (!selectedUserId) {
       Swal.fire('Warning', 'Please select a user', 'warning');
       return;
     }
-
     const selectedUser = users.find(u => u.id === parseInt(selectedUserId));
-    
+    // Validar emails si se ingresaron
+    if (notificationEmails.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emails = notificationEmails.split(',').map(e => e.trim());
+      const invalidEmails = emails.filter(e => e && !emailRegex.test(e));
+      if (invalidEmails.length > 0) {
+        Swal.fire('Error', `Invalid email(s): ${invalidEmails.join(', ')}`, 'error');
+        return;
+      }
+    }
     try {
       await createAlert({
         user_id: parseInt(selectedUserId),
-        days_before_expiration: selectedDays
+        days_before_expiration: selectedDays,
+        notification_emails: notificationEmails.trim() || null  // 👈 Notificacion Email
       });
       
       Swal.fire('Success', `Alert created for user ${selectedUser?.username}`, 'success');
       await loadAllData();
       setSelectedUserId('');
-      setSelectedDays(7);
-      
+      setSelectedDays(5);
+      setNotificationEmails('');  // 👈 Limpiar emails      
     } catch (error) {
       console.error('Error creating alert:', error);
       Swal.fire('Error', error.response?.data?.detail || 'Failed to create alert', 'error');
@@ -99,6 +104,63 @@ const CertificateAlertsPage = () => {
     }
   };
 
+const handleNotifyNow = async (alertId, userName) => {
+  const result = await Swal.fire({
+    title: 'Send notification now?',
+    text: `Send expiration alert for user "${userName}" immediately?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, send now!'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      // Mostrar loading
+      Swal.fire({
+        title: 'Sending...',
+        text: 'Please wait',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const response = await notifyNow(alertId);
+      
+      // Recargar datos para actualizar last_notified_at
+      await loadAllData();
+      
+      // Mostrar resultado
+      if (response.data.email_sent) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Notification Sent!',
+          html: `Email sent to:<br>${response.data.emails_sent_to.join('<br>')}`,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'No Email Sent',
+          text: 'No email addresses configured for this alert.',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to Send',
+        text: error.response?.data?.detail || 'Could not send notification'
+      });
+    }
+  }
+};  
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -114,7 +176,7 @@ const CertificateAlertsPage = () => {
   };
 
   const getExpiryColor = (days) => {
-    if (days <= 7) return '#dc3545';  // Rojo
+    if (days <= 5) return '#dc3545';  // Rojo
     if (days <= 15) return '#ffc107'; // Amarillo
     if (days <= 30) return '#fd7e14'; // Naranja
     return '#28a745'; // Verde
@@ -122,7 +184,7 @@ const CertificateAlertsPage = () => {
 
   const getExpiryStatus = (days) => {
     if (days <= 0) return 'EXPIRED';
-    if (days <= 7) return 'Critical';
+    if (days <= 5) return 'Critical';
     if (days <= 15) return 'Warning';
     if (days <= 30) return 'Attention';
     return 'Healthy';
@@ -199,7 +261,7 @@ const CertificateAlertsPage = () => {
                     </td>
                     <td style={{ padding: '10px' }}>
                       <button
-                        onClick={() => window.open(`/users/${cert.user_id}`, '_blank')}
+                        onClick={() => navigate(`/users/${cert.user_id}`)}
                         className="btn btn-sm btn-info"
                         style={{ marginRight: '8px' }}
                       >
@@ -257,7 +319,23 @@ const CertificateAlertsPage = () => {
               ))}
             </select>
           </div>
-
+          {/* 👈 NUEVO CAMPO DE EMAILS */}
+          <div style={{ flex: 2, minWidth: '250px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Notification Emails (comma separated)
+            </label>
+            <input
+              type="text"
+              value={notificationEmails}
+              onChange={(e) => setNotificationEmails(e.target.value)}
+              placeholder="admin@example.com, team@example.com"
+              className="form-control"
+              style={{ width: '100%', padding: '8px' }}
+            />
+            <small style={{ color: '#666', fontSize: '11px' }}>
+              Leave empty to skip email notifications
+            </small>
+          </div>
           <div>
             <button onClick={handleCreateAlert} className="btn btn-primary" style={{ padding: '8px 24px' }}>
               ➕ Create Alert
@@ -279,6 +357,7 @@ const CertificateAlertsPage = () => {
                 <tr style={{ backgroundColor: '#e9ecef' }}>
                   <th style={{ padding: '12px', textAlign: 'left' }}>User</th>
                   <th style={{ padding: '12px', textAlign: 'left' }}>Days Before Exp.</th>
+                  <th style={{ padding: '12px', textAlign: 'left' }}>Notification Emails</th>  {/* 👈 NUEVA COLUMNA */}
                   <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
                   <th style={{ padding: '12px', textAlign: 'left' }}>Last Notified</th>
                   <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
@@ -299,6 +378,29 @@ const CertificateAlertsPage = () => {
                       <td style={{ padding: '10px', fontWeight: 'bold', color: '#0066cc' }}>
                         {alert.days_before_expiration} days
                       </td>
+
+                      {/* CELDA DE EMAILS */}
+                      <td style={{ padding: '10px' }}>
+                        {alert.notification_emails ? (
+                          <div style={{ fontSize: '12px' }}>
+                            {alert.notification_emails.split(',').map((email, idx) => (
+                              <span key={idx} style={{
+                                display: 'inline-block',
+                                backgroundColor: '#e9ecef',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                margin: '2px',
+                                fontSize: '11px'
+                              }}>
+                                {email.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '12px' }}>No emails configured</span>
+                        )}
+                      </td>
+
                       <td style={{ padding: '10px' }}>
                         <span style={{
                           display: 'inline-block',
@@ -318,6 +420,24 @@ const CertificateAlertsPage = () => {
                           : 'Never notified'}
                       </td>
                       <td style={{ padding: '10px', textAlign: 'center' }}>
+                        
+                        <button
+                          onClick={() => handleNotifyNow(alert.id, user.username)}
+                          className="btn btn-primary btn-sm"
+                          style={{ 
+                            padding: '4px 12px', 
+                            marginRight: '8px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📧 Notify Now
+                        </button>
+                        
+                        
                         <button
                           onClick={() => handleDeleteAlert(alert.id, user.username)}
                           className="btn btn-danger btn-sm"

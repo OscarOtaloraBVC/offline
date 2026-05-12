@@ -24,8 +24,8 @@ const CertificateSummary = () => {
       const certificates = response.data || [];
       
       const counts = {
-        critical: certificates.filter(c => c.days_until_expiry <= 7 && c.days_until_expiry > 0).length,
-        warning: certificates.filter(c => c.days_until_expiry > 7 && c.days_until_expiry <= 15).length,
+        critical: certificates.filter(c => c.days_until_expiry <= 5 && c.days_until_expiry > 0).length,
+        warning: certificates.filter(c => c.days_until_expiry > 5 && c.days_until_expiry <= 15).length,
         attention: certificates.filter(c => c.days_until_expiry > 15 && c.days_until_expiry <= 30).length,
         total: certificates.length
       };

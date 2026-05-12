@@ -7,6 +7,7 @@ class CertificateAlertBase(BaseModel):
     user_id: int
     days_before_expiration: int = Field(..., ge=1, le=365)
     is_active: bool = True
+    notification_emails: Optional[str] = None  # 👈 Emails separados por comas
 
 class CertificateAlertCreate(CertificateAlertBase):
     pass
@@ -14,6 +15,7 @@ class CertificateAlertCreate(CertificateAlertBase):
 class CertificateAlertUpdate(BaseModel):
     days_before_expiration: Optional[int] = Field(None, ge=1, le=365)
     is_active: Optional[bool] = None
+    notification_emails: Optional[str] = None # 👈 Emails
 
 class CertificateAlert(CertificateAlertBase):
     id: int

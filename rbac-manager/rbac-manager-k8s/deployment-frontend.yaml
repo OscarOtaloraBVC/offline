@@ -20,6 +20,6 @@ spec:
       containers:
       - name: rbac-manager-frontend
         #image: registry.nuamexchange.com/transversal-nuam/rbac-manager-frontend:0.0.1-alpha.1
-        image: rbac-registry:5000/rbac-man-mejor-front:2.4
+        image: rbac-registry:5000/rbac-man-alert-front:2.4
         ports:
           - containerPort: 80
