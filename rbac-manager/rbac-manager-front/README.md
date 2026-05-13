@@ -112,7 +112,7 @@ baseURL: 'http://localhost:8000/api/v1'
 
 ## Cambios en esta version
 
-- Se adicionan elementos para la identificacion de certificados proximos a expirar.
+- Se adicionan elementos para la identificacion de certificados proximos a expirar y Alertamiento de certificados.
 
 ```text
 

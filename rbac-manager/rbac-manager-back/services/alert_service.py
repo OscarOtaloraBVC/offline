@@ -111,11 +111,11 @@ def check_and_send_alerts() -> List[dict]:
             if days_until <= row_dict['days_before_expiration'] and days_until >= 0:
                 should_notify = True
                 
-                # Cooldown: no notificar más de una vez cada 24 horas
+                # Cooldown: no notificar más de una vez cada 1 horas   👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈
                 if row_dict['last_notified_at']:
                     last_notified = datetime.fromisoformat(row_dict['last_notified_at'])
                     hours_since = (today - last_notified).total_seconds() / 3600
-                    if hours_since < 24:
+                    if hours_since < 1:     # ajustar la hora   👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈👈
                         should_notify = False
                         print(f"⏸️ Cooldown: {row_dict['username']} - Last notified {hours_since:.1f}h ago")
                 

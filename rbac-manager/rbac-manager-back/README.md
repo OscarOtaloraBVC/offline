@@ -130,13 +130,16 @@ Estas plantillas son utilizadas para generar dinámicamente configuraciones RBAC
 - Se adicionan elementos para la identificacion de certificados proximos a expirar.
 
 ```text
+├── .env
+├── Dockerfile
 ├── api
 │   ├── alerts_api.py
 │   └── certificates_api.py
 ├── models
 │   └── alert_model.py
 └── services
-    └── alert_service.py
+    ├── alert_service.py
+    └── email_service.py
 ```
 
 - Se modifica la creacion de la base de datos y main.

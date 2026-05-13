@@ -95,6 +95,10 @@ def send_certificate_alert_email(to_emails: List[str], username: str, days_until
     """
     Envía una alerta de certificado próximo a expirar.
     """
+
+    # Obtener el nombre del cluster desde variable de entorno
+    cluster_name = os.getenv('RBAC_CLUSTER_NAME', 'Unknown Cluster')
+
     subject = f"⚠️ ALERTA: Certificado de {username} expira en {days_until} días"
     
     # Determinar nivel de urgencia
@@ -152,11 +156,12 @@ def send_certificate_alert_email(to_emails: List[str], username: str, days_until
                 
                 <p>Estimado administrador,</p>
                 
-                <p>El certificado del usuario <strong>{username}</strong> está próximo a expirar.</p>
+                <p>El certificado del usuario <strong>{username}</strong> está próximo a expirar en el cluster <strong>{cluster_name}</strong>.</p>
                 
                 <div class="info">
                     <strong>📋 Detalles:</strong><br>
                     • Usuario: {username}<br>
+                    • Cluster: {cluster_name}<br>
                     • Días restantes: <strong style="color: {urgency_color};">{days_until} días</strong><br>
                     • Fecha de expiración: {expiry_date}<br>
                 </div>
@@ -166,13 +171,6 @@ def send_certificate_alert_email(to_emails: List[str], username: str, days_until
                     • Ingresar al sistema y generar un nuevo kubeconfig para el usuario<br>
                     • El usuario podrá renovar su certificado desde la interfaz<br>
                     • La regeneración del certificado no afecta los permisos del usuario
-                </div>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="#" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-                    Ir al RBAC Manager</a>
-                        Ir al RBAC Manager
-                    </a>
                 </div>
                 <hr style="margin: 20px 0;">
                 <p style="font-size: 12px; color: #666; text-align: center;">
@@ -195,6 +193,7 @@ def send_certificate_alert_email(to_emails: List[str], username: str, days_until
     
     Detalles:
     - Usuario: {username}
+    - Cluster: {cluster_name}
     - Días restantes: {days_until} días
     - Fecha de expiración: {expiry_date}
     

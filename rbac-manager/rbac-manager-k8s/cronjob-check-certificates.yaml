@@ -4,17 +4,40 @@ kind: CronJob
 metadata:
   name: send-certificate-alerts
   namespace: rbac-manager
+  labels:
+    app: rbac-manager
+    component: alert-sender
 spec:
-  schedule: "0 * * * *"  # Cada hora
+  #schedule: "0 */6 * * *"  # Cada 6 horas
+  schedule: "*/10 * * * *" # Cada 10 minutos
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid  # Evita ejecuciones concurrentes
   jobTemplate:
     spec:
+      backoffLimit: 3  # Reintentar 3 veces en caso de fallo
+      ttlSecondsAfterFinished: 3600  # Limpiar jobs después de 1 hora
       template:
         spec:
+          restartPolicy: OnFailure
           containers:
           - name: alert-sender
             image: curlimages/curl:latest
+            imagePullPolicy: IfNotPresent
             command:
             - /bin/sh
             - -c
-            - curl -X POST http://rbac-manager-backend:8000/api/v1/alerts/send-notifications
-          restartPolicy: OnFailure
+            - |
+              echo "=== Certificate Alert Check ==="
+              echo "Starting at $(date)"
+              curl -X POST http://rbac-manager-backend:8000/api/v1/alerts/send-notifications \
+                -H "Content-Type: application/json" \
+                -w "\nHTTP Status: %{http_code}\n"
+              echo "Finished at $(date)"
+            resources:
+              requests:
+                memory: "32Mi"
+                cpu: "10m"
+              limits:
+                memory: "64Mi"
+                cpu: "50m"
