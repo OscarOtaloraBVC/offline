@@ -149,3 +149,13 @@ Estas plantillas son utilizadas para generar dinámicamente configuraciones RBAC
 │   └── install-create-db-sqlite3.sh
 └── main.py
 ```
+
+- En Bbse de desatos se crean las tablas 
+
+  - users_certs: Almacena el contenido del archivo kubeconfig generado para el usuario y la fecha de creación.
+
+  - certificate_alerts: Controla las alertas para avisar antes de que venza un certificado (por ejemplo, enviar un correo si faltan 5 días).
+
+- En  `main.py` se incluye la funcion  `alerts_api` para la onfiguración de las alertas de vencimiento de ccertificados.
+
+- En `services/alert_service.py` la funcion `def check_and_send_alerts() -> dict:` se configura el `Cooldown` de 24 horas para el envio de un unico mensaje diario.

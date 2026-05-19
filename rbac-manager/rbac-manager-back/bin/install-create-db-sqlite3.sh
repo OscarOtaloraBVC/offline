@@ -59,7 +59,7 @@ else
     # Tabla de alertas de expiración de certificados (UNA SOLA VEZ con todas las columnas)
     sqlite3 "$FILEDB" "CREATE TABLE certificate_alerts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER,
         days_before_expiration INTEGER NOT NULL,
         is_active INTEGER DEFAULT 1,
         last_notified_at TEXT,
@@ -67,7 +67,7 @@ else
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         notification_emails TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        UNIQUE(user_id, days_before_expiration)
+        CONSTRAINT unique_alert UNIQUE(user_id, days_before_expiration)
     );"
 
     # Índices para optimización de consultas
@@ -79,6 +79,9 @@ else
 
     sqlite3 "$FILEDB" "CREATE INDEX idx_alerts_emails 
         ON certificate_alerts(notification_emails);"
+
+    sqlite3 "$FILEDB" "CREATE INDEX idx_alerts_global 
+        ON certificate_alerts(user_id) WHERE user_id IS NULL;"
 
     sqlite3 "$FILEDB" ".tables"
 

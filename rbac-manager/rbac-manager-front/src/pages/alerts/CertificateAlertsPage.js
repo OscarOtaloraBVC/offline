@@ -1,170 +1,166 @@
 // frontend/src/pages/alerts/CertificateAlertsPage.js
 import React, { useState, useEffect } from 'react';
-import { getAllUsers } from '../../services/userService';
 import { useNavigate } from 'react-router-dom';
-import { getUserAlerts, createAlert, deleteAlert, notifyNow } from '../../services/alertService';
-import { getExpiringCertificates } from '../../services/certificateService';  // 👈 CertificateService
+import { 
+  getGlobalAlert, 
+  saveGlobalAlert, 
+  deleteGlobalAlert 
+} from '../../services/alertService';
+import { getExpiringCertificates } from '../../services/certificateService';
 import Swal from 'sweetalert2';
 
 const CertificateAlertsPage = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState('');
-  const [selectedDays, setSelectedDays] = useState(5);
-  const [notificationEmails, setNotificationEmails] = useState('');  // 👈 Notificacion Email
-  const [userAlerts, setUserAlerts] = useState({});
   const [expiringCerts, setExpiringCerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const daysOptions = [5, 15, 30, 60, 90];
+  const [globalAlert, setGlobalAlert] = useState(null);
+  const [notificationEmails, setNotificationEmails] = useState('');
+  const [showValidationError, setShowValidationError] = useState(false);
+
   useEffect(() => {
     loadAllData();
   }, []);
+
   const loadAllData = async () => {
     setLoading(true);
     try {
-      // 1. Cargar usuarios
-      const usersRes = await getAllUsers();
-      const usersList = usersRes.data || [];
-      setUsers(usersList);
-      // 2. Cargar alertas por usuario
-      const alertsMap = {};
-      for (const user of usersList) {
-        try {
-          const alertsRes = await getUserAlerts(user.id);
-          alertsMap[user.id] = alertsRes.data || [];
-        } catch (err) {
-          console.error(`Error loading alerts for user ${user.id}:`, err);
-          alertsMap[user.id] = [];
-        }
-      }
-      setUserAlerts(alertsMap);
-      // 3. Cargar certificados próximos a vencer (dashboard - solo lectura)
-      const expiringRes = await getExpiringCertificates();  // 👈 Certificates
+      // Cargar certificados próximos a vencer
+      const expiringRes = await getExpiringCertificates();
       setExpiringCerts(expiringRes.data || []);
+      
+      // Cargar configuración de alerta global
+      const globalRes = await getGlobalAlert();
+      const alert = globalRes.data;
+      setGlobalAlert(alert);
+      
+      if (alert) {
+        setNotificationEmails(alert.notification_emails || '');
+      }
     } catch (error) {
       console.error('Error loading data:', error);
-      Swal.fire('Error', 'Failed to load alerts data', 'error');
+      Swal.fire('Error', 'Failed to load certificates data', 'error');
     } finally {
       setLoading(false);
     }
   };
-  const handleCreateAlert = async () => {
-    if (!selectedUserId) {
-      Swal.fire('Warning', 'Please select a user', 'warning');
+
+  const handleSaveConfiguration = async () => {
+    // Limpiar error visual previo
+    setShowValidationError(false);
+    
+    // === NUEVA VALIDACIÓN: Verificar si ya existe una alerta ===
+    if (globalAlert) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Alert Already Exists',
+        text: 'You already have a configured alert. Please delete the existing alert before creating a new one.',
+        confirmButtonText: 'OK'
+      });
       return;
     }
-    const selectedUser = users.find(u => u.id === parseInt(selectedUserId));
-    // Validar emails si se ingresaron
-    if (notificationEmails.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const emails = notificationEmails.split(',').map(e => e.trim());
-      const invalidEmails = emails.filter(e => e && !emailRegex.test(e));
-      if (invalidEmails.length > 0) {
-        Swal.fire('Error', `Invalid email(s): ${invalidEmails.join(', ')}`, 'error');
-        return;
-      }
-    }
-    try {
-      await createAlert({
-        user_id: parseInt(selectedUserId),
-        days_before_expiration: selectedDays,
-        notification_emails: notificationEmails.trim() || null  // 👈 Notificacion Email
+
+    // 1. Validar que haya emails
+    if (!notificationEmails || !notificationEmails.trim()) {
+      setShowValidationError(true);
+      Swal.fire({
+        icon: 'error',
+        title: 'Email Required',
+        text: 'Please enter at least one notification email address.',
+        confirmButtonText: 'OK'
       });
+      return;
+    }
+
+    // 2. Validar formato de emails
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emails = notificationEmails.split(',').map(e => e.trim());
+    
+    // Filtrar emails vacíos
+    const validEmails = emails.filter(e => e !== '');
+    
+    if (validEmails.length === 0) {
+      setShowValidationError(true);
+      Swal.fire({
+        icon: 'error',
+        title: 'Email Required',
+        text: 'Please enter at least one valid email address.',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+    
+    const invalidEmails = validEmails.filter(e => !emailRegex.test(e));
+    
+    if (invalidEmails.length > 0) {
+      setShowValidationError(true);
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Email Format',
+        html: `The following email(s) are invalid:<br/><strong>${invalidEmails.join(', ')}</strong><br/><br/>Please check the format.`,
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+    try {
+      const alertData = {
+        days_before_expiration: 30,
+        is_active: true,
+        notification_emails: notificationEmails.trim()
+      };
       
-      Swal.fire('Success', `Alert created for user ${selectedUser?.username}`, 'success');
+      await saveGlobalAlert(alertData);
+      setShowValidationError(false);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Email configuration saved successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
       await loadAllData();
-      setSelectedUserId('');
-      setSelectedDays(5);
-      setNotificationEmails('');  // 👈 Limpiar emails      
     } catch (error) {
-      console.error('Error creating alert:', error);
-      Swal.fire('Error', error.response?.data?.detail || 'Failed to create alert', 'error');
+      console.error('Error saving configuration:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to save configuration';
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+        confirmButtonText: 'OK'
+      });
     }
   };
 
-  const handleDeleteAlert = async (alertId, userName) => {
+  const handleDeleteAlert = async (alert) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Delete alert for user "${userName}"?`,
+      title: 'Delete Alert?',
+      text: `Delete email report configuration for "${alert.notification_emails || 'No emails'}"? You can create a new one later.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: 'Yes, delete'
     });
 
     if (result.isConfirmed) {
       try {
-        await deleteAlert(alertId);
-        Swal.fire('Deleted!', 'Alert has been deleted.', 'success');
+        await deleteGlobalAlert();
+        Swal.fire('Deleted', 'Email report configuration has been deleted', 'success');
         await loadAllData();
       } catch (error) {
-        Swal.fire('Error', 'Failed to delete alert', 'error');
+        console.error('Error deleting alert:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.response?.data?.detail || 'Failed to delete alert configuration',
+          confirmButtonText: 'OK'
+        });
       }
     }
   };
-
-const handleNotifyNow = async (alertId, userName) => {
-  const result = await Swal.fire({
-    title: 'Send notification now?',
-    text: `Send expiration alert for user "${userName}" immediately?`,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Yes, send now!'
-  });
-
-  if (result.isConfirmed) {
-    try {
-      // Mostrar loading
-      Swal.fire({
-        title: 'Sending...',
-        text: 'Please wait',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      const response = await notifyNow(alertId);
-      
-      // Recargar datos para actualizar last_notified_at
-      await loadAllData();
-      
-      // Mostrar resultado
-      if (response.data.email_sent) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Notification Sent!',
-          html: `Email sent to:<br>${response.data.emails_sent_to.join('<br>')}`,
-          timer: 3000,
-          showConfirmButton: false
-        });
-      } else {
-        Swal.fire({
-          icon: 'warning',
-          title: 'No Email Sent',
-          text: 'No email addresses configured for this alert.',
-          timer: 2000,
-          showConfirmButton: false
-        });
-      }
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Failed to Send',
-        text: error.response?.data?.detail || 'Could not send notification'
-      });
-    }
-  }
-};  
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      // Solo recargar datos, no enviar notificaciones
       await loadAllData();
       Swal.fire('Refreshed', 'Certificate status updated', 'success');
     } catch (error) {
@@ -176,10 +172,10 @@ const handleNotifyNow = async (alertId, userName) => {
   };
 
   const getExpiryColor = (days) => {
-    if (days <= 5) return '#dc3545';  // Rojo
-    if (days <= 15) return '#ffc107'; // Amarillo
-    if (days <= 30) return '#fd7e14'; // Naranja
-    return '#28a745'; // Verde
+    if (days <= 5) return '#dc3545';
+    if (days <= 15) return '#ffc107';
+    if (days <= 30) return '#fd7e14';
+    return '#28a745';
   };
 
   const getExpiryStatus = (days) => {
@@ -196,7 +192,7 @@ const handleNotifyNow = async (alertId, userName) => {
         <div className="spinner-border text-primary" role="status">
           <span className="sr-only">Loading...</span>
         </div>
-        <p>Loading certificate alerts...</p>
+        <p>Loading certificate information...</p>
       </div>
     );
   }
@@ -204,13 +200,13 @@ const handleNotifyNow = async (alertId, userName) => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>🔐 Certificate Expiration Alerts</h2>
+        <h2>🔐 Certificate Expiration Report</h2>
         <button onClick={handleRefresh} disabled={refreshing} className="btn btn-secondary">
           {refreshing ? 'Refreshing...' : '🔄 Refresh Status'}
         </button>
       </div>
 
-      {/* SECCIÓN: CERTIFICADOS PRÓXIMOS A VENCER (DASHBOARD) */}
+      {/* SECCIÓN: CERTIFICADOS PRÓXIMOS A VENCER */}
       <div className="card" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#fff3cd', borderLeft: '4px solid #ffc107' }}>
         <h3 style={{ marginTop: 0, color: '#856404' }}>
           ⚠️ Certificates Expiring Soon ({expiringCerts.length})
@@ -222,22 +218,22 @@ const handleNotifyNow = async (alertId, userName) => {
           </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#ffe8a1' }}>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>User</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Days Remaining</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Expiration Date</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Certificate Days</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Actions</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>User</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Status</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Days Remaining</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Expiration Date</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Certificate Days</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {expiringCerts.map(cert => (
-                  <tr key={cert.user_id} style={{ backgroundColor: cert.days_until_expiry <= 7 ? '#f8d7da' : 'transparent' }}>
-                    <td style={{ padding: '10px' }}><strong>{cert.username}</strong></td>
-                    <td style={{ padding: '10px' }}>
+                  <tr key={cert.user_id}>
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}><strong>{cert.username}</strong></td>
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                       <span style={{
                         display: 'inline-block',
                         padding: '4px 8px',
@@ -250,31 +246,22 @@ const handleNotifyNow = async (alertId, userName) => {
                         {getExpiryStatus(cert.days_until_expiry)}
                       </span>
                     </td>
-                    <td style={{ padding: '10px', color: getExpiryColor(cert.days_until_expiry), fontWeight: 'bold' }}>
+                    <td style={{ padding: '10px', border: '1px solid #ddd', color: getExpiryColor(cert.days_until_expiry), fontWeight: 'bold' }}>
                       {cert.days_until_expiry} days
                     </td>
-                    <td style={{ padding: '10px' }}>
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                       {new Date(cert.expiry_date).toLocaleDateString()}
                     </td>
-                    <td style={{ padding: '10px' }}>
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                       {cert.cert_days} days
                     </td>
-                    <td style={{ padding: '10px' }}>
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                       <button
                         onClick={() => navigate(`/users/${cert.user_id}`)}
                         className="btn btn-sm btn-info"
-                        style={{ marginRight: '8px' }}
+                        style={{ padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}
                       >
                         👤 View User
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedUserId(cert.user_id.toString());
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="btn btn-sm btn-warning"
-                      >
-                        🔔 Configure Alert
                       </button>
                     </td>
                   </tr>
@@ -285,44 +272,22 @@ const handleNotifyNow = async (alertId, userName) => {
         )}
       </div>
 
-      {/* SECCIÓN: CONFIGURAR NUEVA ALERTA */}
+      {/* SECCIÓN: CONFIGURAR NUEVA ALERTA*/}
       <div className="card" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa' }}>
-        <h3>🔔 Configure New Certificate Alert</h3>
+        <h3>📧 Configure New Certificate Alert</h3>
+        <p style={{ color: '#666', marginBottom: '15px' }}>
+          Configure the email address(es) that will receive the complete certificate expiration report.
+          The report will be sent automatically.<br /> 
+          <br />
+          <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
+          ⚠️ You can only have ONE active alert configuration at a time.
+          </span><br />
+        </p>
+        
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: 2, minWidth: '200px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Select User</label>
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="form-control"
-              style={{ width: '100%', padding: '8px' }}
-            >
-              <option value="">-- Select a user --</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.username} (Cert: {user.cert_days} days)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ flex: 1, minWidth: '150px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Notify when expires in</label>
-            <select
-              value={selectedDays}
-              onChange={(e) => setSelectedDays(parseInt(e.target.value))}
-              className="form-control"
-              style={{ width: '100%', padding: '8px' }}
-            >
-              {daysOptions.map(days => (
-                <option key={days} value={days}>{days} days</option>
-              ))}
-            </select>
-          </div>
-          {/* 👈 NUEVO CAMPO DE EMAILS */}
-          <div style={{ flex: 2, minWidth: '250px' }}>
+          <div style={{ flex: 2, minWidth: '300px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Notification Emails (comma separated)
+              Notification Emails (comma separated) <span style={{ color: '#dc3545' }}>*</span>
             </label>
             <input
               type="text"
@@ -330,14 +295,26 @@ const handleNotifyNow = async (alertId, userName) => {
               onChange={(e) => setNotificationEmails(e.target.value)}
               placeholder="admin@example.com, team@example.com"
               className="form-control"
-              style={{ width: '100%', padding: '8px' }}
+              style={{ 
+                width: '90%', 
+                padding: '8px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px',
+                borderColor: !notificationEmails && showValidationError ? '#dc3545' : '#ccc'
+              }}
+              required
             />
             <small style={{ color: '#666', fontSize: '11px' }}>
-              Leave empty to skip email notifications
+              * Required. These recipients will receive the complete certificate report.
             </small>
           </div>
+          
           <div>
-            <button onClick={handleCreateAlert} className="btn btn-primary" style={{ padding: '8px 24px' }}>
+            <button 
+              onClick={handleSaveConfiguration} 
+              className="btn btn-primary" 
+              style={{ padding: '8px 24px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
               ➕ Create Alert
             </button>
           </div>
@@ -347,118 +324,95 @@ const handleNotifyNow = async (alertId, userName) => {
       {/* SECCIÓN: ALERTAS CONFIGURADAS */}
       <div className="card" style={{ padding: '20px' }}>
         <h3>📋 Configured Alerts</h3>
-        
-        {users.length === 0 ? (
-          <p>No users found.</p>
+        <p style={{ color: '#666', marginBottom: '15px' }}>
+          Notification emails will receive the complete certificate expiration report 30 Days Before Exp.
+        </p>
+        {!globalAlert ? (
+          <p style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+            No alerts configured. Use the form above to create a certificate expiration alert.
+          </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#e9ecef' }}>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>User</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Days Before Exp.</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Notification Emails</th>  {/* 👈 NUEVA COLUMNA */}
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>Last Notified</th>
-                  <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+
+                  <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Notification Emails</th>
+
+                  <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'left', border: '1px solid #ddd' }}>Last Notified</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #ddd' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => {
-                  const alerts = userAlerts[user.id] || [];
-                  if (alerts.length === 0) return null;
-                  
-                  return alerts.map(alert => (
-                    <tr key={alert.id}>
-                      <td style={{ padding: '10px' }}>
-                        <strong>{user.username}</strong>
-                        <br />
-                        <small style={{ color: '#666' }}>ID: {user.id}</small>
-                      </td>
-                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#0066cc' }}>
-                        {alert.days_before_expiration} days
-                      </td>
+                <tr>
 
-                      {/* CELDA DE EMAILS */}
-                      <td style={{ padding: '10px' }}>
-                        {alert.notification_emails ? (
-                          <div style={{ fontSize: '12px' }}>
-                            {alert.notification_emails.split(',').map((email, idx) => (
-                              <span key={idx} style={{
-                                display: 'inline-block',
-                                backgroundColor: '#e9ecef',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                margin: '2px',
-                                fontSize: '11px'
-                              }}>
-                                {email.trim()}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span style={{ color: '#999', fontSize: '12px' }}>No emails configured</span>
-                        )}
-                      </td>
-
-                      <td style={{ padding: '10px' }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          backgroundColor: alert.is_active ? '#d4edda' : '#f8d7da',
-                          color: alert.is_active ? '#155724' : '#721c24'
-                        }}>
-                          {alert.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px' }}>
-                        {alert.last_notified_at 
-                          ? new Date(alert.last_notified_at).toLocaleString()
-                          : 'Never notified'}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'center' }}>
-                        
-                        <button
-                          onClick={() => handleNotifyNow(alert.id, user.username)}
-                          className="btn btn-primary btn-sm"
-                          style={{ 
-                            padding: '4px 12px', 
-                            marginRight: '8px',
-                            backgroundColor: '#28a745',
-                            color: 'white',
-                            border: 'none',
+                  <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                    {globalAlert.notification_emails ? (
+                      <div>
+                        {globalAlert.notification_emails.split(',').map((email, idx) => (
+                          <span key={idx} style={{
+                            display: 'inline-block',
+                            backgroundColor: '#e9ecef',
+                            padding: '2px 6px',
                             borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          📧 Notify Now
-                        </button>
-                        
-                        
-                        <button
-                          onClick={() => handleDeleteAlert(alert.id, user.username)}
-                          className="btn btn-danger btn-sm"
-                          style={{ padding: '4px 12px' }}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ));
-                })}
+                            margin: '2px',
+                            fontSize: '11px'
+                          }}>
+                            {email.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span style={{ color: '#999', fontSize: '12px' }}>No emails configured</span>
+                    )}
+                  </td>
+
+                  <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      backgroundColor: globalAlert.is_active ? '#d4edda' : '#f8d7da',
+                      color: globalAlert.is_active ? '#155724' : '#721c24'
+                    }}>
+                      {globalAlert.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                    {globalAlert.last_notified_at 
+                      ? new Date(globalAlert.last_notified_at).toLocaleString()
+                      : 'Never notified'}
+                  </td>
+                  <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleDeleteAlert(globalAlert)}
+                      className="btn btn-danger btn-sm"
+                      style={{ padding: '4px 12px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
-            
-            {Object.values(userAlerts).every(alerts => alerts.length === 0) && (
-              <p style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
-                No alerts configured. Use the form above to create certificate expiration alerts.
-              </p>
-            )}
           </div>
         )}
+      </div>
+      
+      {/* Información adicional */}
+      <div className="card" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e7f3ff', borderLeft: '4px solid #2196F3' }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>ℹ️ How it works</h4>
+        <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>
+          • The report includes ALL certificates shown in the "Certificates Expiring Soon" table above.<br />
+          • Reports are automatically sent every 24 hours via Kubernetes CronJob.<br />
+          <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
+          • ⚠️ You can only have ONE active alert configuration at a time.
+          </span><br />
+          • To change the email recipients, create a new alert (it will replace the existing one).
+        </p>
       </div>
     </div>
   );

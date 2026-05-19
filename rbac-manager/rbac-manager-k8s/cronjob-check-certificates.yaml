@@ -9,7 +9,7 @@ metadata:
     component: alert-sender
 spec:
   #schedule: "0 */6 * * *"  # Cada 6 horas
-  schedule: "*/10 * * * *" # Cada 10 minutos
+  schedule: "*/30 * * * *" # Cada 30 minutos
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   concurrencyPolicy: Forbid  # Evita ejecuciones concurrentes
