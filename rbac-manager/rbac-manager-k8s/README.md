@@ -110,15 +110,13 @@ data:
 
 ## Acceso  
 
-Para acceder a los servicios se debe ejecutar en terminal por separado.
+Para acceder a los servicios se debe ejecutar un port-forward al servicio  `rbac-manager-frontend` por el puerto  `8080`.
 
 ```bash
 kubectl port-forward svc/rbac-manager-frontend 8080:8080 -n rbac-manager
 
-kubectl port-forward svc/rbac-manager-backend 8000:8000 -n rbac-manager
-
 ```
 
-- Ingregar a
+- Ingresar a
 
 <http://localhost:8080/ui/>

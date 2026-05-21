@@ -1,0 +1,26 @@
+---
+name: Continuos integracion
+
+on:
+  pull_request:
+    types:
+      - opened
+      - closed
+    branches:
+      - development
+      - test
+      - preprod
+      - production
+      - main
+jobs:
+  continuos_integration:
+    name: '[CI]'
+    uses: nuamx/devops-resources-refactor/.github/workflows/CI-python-main_facade.yaml@feat/ARQPD-4586
+    secrets: inherit
+    with: # CONFIG INPUTS
+      python_version: "3.14.4" 
+      python_image: "3.14.4-alpine3.23"
+      registry_project: "transversal-nuam"
+      registry_repository: "rbac-manager-backend"
+      port_exposed: false
+      dockerfile: "python-rbac"

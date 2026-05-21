@@ -1,0 +1,26 @@
+---
+name: Continuos integracion
+
+on:
+  pull_request:
+    types:
+      - opened
+      - closed
+    branches:
+      - development
+      - test
+      - preprod
+      - production
+      - main
+jobs:
+  continuos_integration:
+    name: '[CI]'
+    uses: nuamx/devops-resources-refactor/.github/workflows/CI-react-main_facade.yaml@development
+    secrets: inherit
+    with:
+      node_version: 18
+      registry_project: "transversal-nuam"
+      registry_repository: "rbac-manager-frontend"
+      port_exposed: 80
+      ubuntu_version: 'latest' # change this values if the project needs another specific ubuntu version
+      #sub_directory: '/commons' # se agrega el / porque sino no toma como subcarpeta

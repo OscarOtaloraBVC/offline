@@ -23,7 +23,7 @@ rbac-manager-frontend/
 ├── 📁 .github
 │   └── 📁 workflows
 │       └── ⚙️ continuos_integration.yml   			    # Pipeline de CI
-├── 📁 public							                # Archivos estáticos			
+├── 📁 public							                # Archivos estáticos
 │   ├── 📄 favicon.ico
 │   ├── 🖼️ favicon.svg
 │   ├── 🌐 index.html
@@ -44,9 +44,10 @@ rbac-manager-frontend/
 │   │   │   ├── 📄 ManageProfilePermissionsModal.js
 │   │   │   └── 📄 ManageUserAssignmentsModal.js
 │   │   ├── 📄 Autocomplete.js
+│   │   ├── 📄 CertificateSummary.js
 │   │   ├── 📄 Layout.js
 │   │   └── 📄 TopMenu.js
-│   ├── 📁 pages						                # Vistas principales
+│   ├── 📁 pages                                        # Vistas principales
 │   │   ├── 📁 profiles
 │   │   │   ├── 📄 ProfileDetailPage.js
 │   │   │   ├── 📄 ProfileEditPage.js
@@ -58,27 +59,29 @@ rbac-manager-frontend/
 │   │   │   ├── 📄 UserListPage.js
 │   │   │   └── 📄 UserNewPage.js
 │   │   └── 📄 HomePage.js
-│   ├── 📁 services						                # Lógica de conexión a APIs
+│   ├── 📁 services                                     # Lógica de conexión a APIs
+│   │   ├── 📄 alertService.js
 │   │   ├── 📄 api.js
 │   │   ├── 📄 api.js.dev
 │   │   ├── 📄 api.js.prod
+│   │   ├── 📄 certificateService.js
 │   │   ├── 📄 k8sService.js
 │   │   ├── 📄 profileService.js
 │   │   └── 📄 userService.js
 │   ├── 🎨 App.css
-│   ├── 📄 App.js						                # Componente principal
+│   ├── 📄 App.js                                       # Componente principal
 │   ├── 📄 App.test.js
 │   ├── 🎨 index.css
-│   ├── 📄 index.js						                # Punto de entrada
+│   ├── 📄 index.js                                     # Punto de entrada
 │   ├── 🖼️ logo.svg
 │   ├── 📄 reportWebVitals.js
 │   └── 📄 setupTests.js
 ├── ⚙️ .gitignore
 ├── 🐳 Dockerfile
 ├── 📝 README.md
-├── ⚙️ nginx.conf						                # Construcción de imagen
+├── ⚙️ nginx.conf                                       # Construcción de imagen
 ├── ⚙️ package-lock.json
-└── ⚙️ package.json						                # Dependencias y scripts
+└── ⚙️ package.json                                     # Dependencias y scripts
 └── 📄 run.sh
 ```
 
@@ -110,9 +113,9 @@ baseURL: 'http://localhost:8000/api/v1'
 
 ---
 
-## Cambios en esta version
+## Cambios en esta versión
 
-- Se adicionan elementos para la identificacion de certificados proximos a expirar y Alertamiento de certificados.
+- Se adicionan elementos para la identificación de certificados próximos a expirar y alertamiento de certificados:
 
 ```text
 
@@ -127,7 +130,7 @@ baseURL: 'http://localhost:8000/api/v1'
         └── certificateService.js
 ```
 
-- Se incluyen vistas en
+- Se incluyen vistas en:
 
 ```text
 └── src

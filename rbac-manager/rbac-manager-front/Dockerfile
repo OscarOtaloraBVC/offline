@@ -2,6 +2,11 @@ ARG node_version=20
 FROM docker.io/node:${node_version}-alpine AS builder
 WORKDIR /usr/src/app
 COPY . .
+
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
+
 RUN npm install --no-audit
 ARG kendo_license=false
 RUN if [ "${kendo_license}" = "false" ]; then \ 
