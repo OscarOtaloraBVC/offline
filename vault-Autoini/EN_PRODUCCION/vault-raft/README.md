@@ -1,4 +1,18 @@
-# Pasos inicio de vault - Raft
+# DEspliegue de Vault con Raft
+
+Estos manifiestos despliegue vault utilizando Integrated storage (Raft) en backend
+
+https://developer.hashicorp.com/vault/docs/configuration/storage/raft
+
+```
+├── 📝 README.md
+├── ⚙️ kustomization.yaml
+├── ⚙️ namespace.yaml
+├── ⚙️ vault-ha-release.yaml
+└── ⚙️ vault-repo.yaml
+```
+
+## Pasos inicio de vault - Raft
 
 1 - Inicializar SOLO vault-0
 
