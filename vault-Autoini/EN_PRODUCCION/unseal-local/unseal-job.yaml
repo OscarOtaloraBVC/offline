@@ -19,7 +19,7 @@ spec:
           echo "Esperando a que los pods de Vault estén disponibles..."
           sleep 30
           
-          # Ejecutar el script de desbloqueo
+          # Ejecutar el script de desbloqueo (monitoreo continuo)
           /scripts/unseal.sh
         volumeMounts:
         - name: script-volume
