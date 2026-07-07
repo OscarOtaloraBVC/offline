@@ -1,0 +1,84 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  interval: 5m
+  releaseName: vault
+  chart:
+    spec:
+      chart: vault
+      version: 0.30.0
+      sourceRef:
+        kind: HelmRepository
+        name: hashicorp
+        namespace: vault
+
+  values:
+    global:
+      enabled: true
+
+    ui:
+      enabled: true
+
+    injector:
+      enabled: false
+
+    server:
+      enabled: true
+      
+      nodeSelector: {}
+      tolerations: []
+
+      logLevel: debug
+
+      ha:
+        enabled: true
+        replicas: 2
+        raft:
+          enabled: false
+        config: |-
+          ui = true
+          
+          listener "tcp" {
+            tls_disable = 1
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+          }
+          
+          # CORREGIDO: Usar el nombre correcto del servicio
+          storage "postgresql" {
+            connection_url = "postgresql://admin:admin123@cloudnative-pg-pooler.vault.svc.cluster.local:5432/vault?sslmode=disable"
+          }
+          
+          ha_storage "postgresql" {
+            connection_url = "postgresql://admin:admin123@cloudnative-pg-pooler.vault.svc.cluster.local:5432/vault?sslmode=disable"
+          }
+
+      dataStorage:
+        enabled: true
+        size: 1Gi
+        storageClass: local-path
+
+      affinity: |
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: vault
+                  app.kubernetes.io/instance: vault
+              topologyKey: kubernetes.io/hostname
+
+      readinessProbe:
+        enabled: true
+        port: 8200
+
+      service:
+        enabled: true
+        type: ClusterIP
+        port: 8200
+
+      haService:
+        enabled: true
+        port: 8201

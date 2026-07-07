@@ -1,0 +1,46 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cloudnative-pg-cluster
+  namespace: vault
+spec:
+  instances: 3
+
+  storage:
+    size: 1Gi
+    storageClass: local-path
+
+  bootstrap:
+    initdb:
+      database: vault
+      owner: admin
+      secret:
+        name: pg-secret-vault
+      postInitApplicationSQLRefs:
+        configMapRefs:
+        - name: cloudnative-init-scripts
+          key: setup2.sql
+  superuserSecret:
+    name: pg-superuser-vault
+
+  postgresql:
+    parameters:
+
+      ## pg_stat_statements
+      pg_stat_statements.max: "10000"
+      pg_stat_statements.track: "all"
+      pg_stat_statements.track_utility: "off"
+      pg_stat_statements.save: "on"
+
+      ## locks
+      log_line_prefix: '%m [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h,session=%c '
+      log_lock_waits: "on"
+      deadlock_timeout: "1s"
+      log_error_verbosity: "default" 
+      track_activities: "on"
+      track_counts: "on"
+
+      ## Logs
+      log_connections: "on"
+      log_disconnections: "on"
+      "pgaudit.log": "ddl,role"
