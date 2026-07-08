@@ -91,7 +91,7 @@ data:
     
     wait_running() {
         POD=$1
-        local MAX_RETRIES=60
+        local MAX_RETRIES=30
         local RETRY_COUNT=0
         
         while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
