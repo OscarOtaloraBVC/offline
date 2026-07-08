@@ -3,8 +3,9 @@
 VAULT_NAMESPACE="vault"
 CONTAINER_NAME="vault"
 
-UNSEAL_KEY_1="f+TGmZnm0UOf6mQmbg5zGl+feJfdNnfo7phZsFBQx3Ue"
-UNSEAL_KEY_2="EkId4aZArAVq/6565qFQUOr3r1C1xZiUPoG3p8Qw297f"
+UNSEAL_KEY_1="DFAd4mDGX7ucK+coBnn1VrivYRmRR+m8yLtaZwlvsvS1"
+UNSEAL_KEY_2="+z9cS04RoGtaYG8D6mHLEo4w6JASjY2LrydhdthRWFs7"
+UNSEAL_KEY_3="Bt537vE+27LY3PZtJIdTLpuHskRrSJAMiCdcUrws0ofh"
 
 KUBECTL=$(command -v kubectl)
 
@@ -68,6 +69,11 @@ unseal_if_needed() {
 
         $KUBECTL exec -n $VAULT_NAMESPACE $POD -- \
             vault operator unseal "$UNSEAL_KEY_2"
+
+        sleep 2
+
+                $KUBECTL exec -n $VAULT_NAMESPACE $POD -- \
+            vault operator unseal "$UNSEAL_KEY_3"
 
         sleep 2
 

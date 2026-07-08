@@ -6,143 +6,123 @@ metadata:
 data:
   unseal.sh: |
     #!/bin/sh
-
+    
     VAULT_NAMESPACE="${VAULT_NAMESPACE:-vault}"
     CONTAINER_NAME="${CONTAINER_NAME:-vault}"
     SECRET_NAME="${SECRET_NAME:-vault-unseal-keys}"
-
+    
     KUBECTL=$(command -v kubectl)
-
+    
     log() {
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
     }
-
+    
     # Función para obtener secretos de Kubernetes
     get_secret() {
         local secret_key=$1
         # Obtener y decodificar, remover saltos de línea
         $KUBECTL get secret "$SECRET_NAME" -n "$VAULT_NAMESPACE" -o jsonpath="{.data.$secret_key}" 2>/dev/null | base64 -d | tr -d '\n\r'
     }
-
+    
     # Función para obtener las claves de desbloqueo
     get_unseal_keys() {
         log "Obteniendo claves de desbloqueo desde Kubernetes secrets..."
-
+        
         UNSEAL_KEY_1=$(get_secret "unseal-key-1")
         UNSEAL_KEY_2=$(get_secret "unseal-key-2")
-        UNSEAL_KEY_3=$(get_secret "unseal-key-3")
-
-        if [ -z "$UNSEAL_KEY_1" ] || [ -z "$UNSEAL_KEY_2" ] || [ -z "$UNSEAL_KEY_3" ]; then
+        
+        if [ -z "$UNSEAL_KEY_1" ] || [ -z "$UNSEAL_KEY_2" ]; then
             log "ERROR: No se pudieron obtener las claves de desbloqueo"
             log "Verificando que el secreto existe..."
             $KUBECTL get secret "$SECRET_NAME" -n "$VAULT_NAMESPACE" 2>/dev/null || echo "Secret $SECRET_NAME no encontrado"
             return 1
         fi
-
+        
         # Log de longitudes
         LEN1=${#UNSEAL_KEY_1}
         LEN2=${#UNSEAL_KEY_2}
-        LEN3=${#UNSEAL_KEY_3}
-
+        
         log "UNSEAL_KEY_1: ${UNSEAL_KEY_1:0:10}... (longitud: $LEN1)"
         log "UNSEAL_KEY_2: ${UNSEAL_KEY_2:0:10}... (longitud: $LEN2)"
-        log "UNSEAL_KEY_3: ${UNSEAL_KEY_3:0:10}... (longitud: $LEN3)"
-
+        
         # Si la longitud es 45, podría tener un carácter extra, intentar corregir
         if [ $LEN1 -eq 45 ]; then
             log "WARNING: Clave 1 tiene 45 caracteres, intentando corregir..."
+            # Intentar eliminar el último carácter si parece ser un salto de línea
             UNSEAL_KEY_1=$(echo "$UNSEAL_KEY_1" | cut -c1-44)
             log "Clave 1 ajustada a: ${UNSEAL_KEY_1:0:10}... (${#UNSEAL_KEY_1} chars)"
         fi
-
+        
         if [ $LEN2 -eq 45 ]; then
             log "WARNING: Clave 2 tiene 45 caracteres, intentando corregir..."
             UNSEAL_KEY_2=$(echo "$UNSEAL_KEY_2" | cut -c1-44)
             log "Clave 2 ajustada a: ${UNSEAL_KEY_2:0:10}... (${#UNSEAL_KEY_2} chars)"
         fi
-
-        if [ $LEN3 -eq 45 ]; then
-            log "WARNING: Clave 3 tiene 45 caracteres, intentando corregir..."
-            UNSEAL_KEY_3=$(echo "$UNSEAL_KEY_3" | cut -c1-44)
-            log "Clave 3 ajustada a: ${UNSEAL_KEY_3:0:10}... (${#UNSEAL_KEY_3} chars)"
-        fi
-
+        
         # Verificar que las claves tienen el formato correcto
         if [ ${#UNSEAL_KEY_1} -ne 44 ]; then
             log "ERROR: La clave 1 tiene longitud ${#UNSEAL_KEY_1}, se esperaban 44 caracteres"
             log "Contenido completo: '$UNSEAL_KEY_1'"
             return 1
         fi
-
+        
         if [ ${#UNSEAL_KEY_2} -ne 44 ]; then
             log "ERROR: La clave 2 tiene longitud ${#UNSEAL_KEY_2}, se esperaban 44 caracteres"
             log "Contenido completo: '$UNSEAL_KEY_2'"
             return 1
         fi
-
-        if [ ${#UNSEAL_KEY_3} -ne 44 ]; then
-            log "ERROR: La clave 3 tiene longitud ${#UNSEAL_KEY_3}, se esperaban 44 caracteres"
-            log "Contenido completo: '$UNSEAL_KEY_3'"
-            return 1
-        fi
-
+        
         # Verificar que las claves son base64 válidas
         if ! echo "$UNSEAL_KEY_1" | base64 -d 2>/dev/null > /dev/null; then
             log "ERROR: UNSEAL_KEY_1 no es base64 válida"
             log "Contenido: $UNSEAL_KEY_1"
             return 1
         fi
-
+        
         if ! echo "$UNSEAL_KEY_2" | base64 -d 2>/dev/null > /dev/null; then
             log "ERROR: UNSEAL_KEY_2 no es base64 válida"
             log "Contenido: $UNSEAL_KEY_2"
             return 1
         fi
-
-        if ! echo "$UNSEAL_KEY_3" | base64 -d 2>/dev/null > /dev/null; then
-            log "ERROR: UNSEAL_KEY_3 no es base64 válida"
-            log "Contenido: $UNSEAL_KEY_3"
-            return 1
-        fi
-
+        
         log "Claves obtenidas y validadas correctamente"
         return 0
     }
-
+    
     wait_running() {
         POD=$1
         local MAX_RETRIES=30
         local RETRY_COUNT=0
-
+        
         while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             STATUS=$($KUBECTL get pod "$POD" -n "$VAULT_NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null)
             READY=$($KUBECTL get pod "$POD" -n "$VAULT_NAMESPACE" \
                 -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null)
-
+            
             if [ "$STATUS" = "Running" ] && [ "$READY" = "true" ]; then
                 log "$POD Running y Ready"
                 return 0
             fi
-
+            
             log "Esperando $POD... Status=$STATUS Ready=$READY ($RETRY_COUNT/$MAX_RETRIES)"
             sleep 5
             RETRY_COUNT=$((RETRY_COUNT + 1))
         done
-
+        
         log "ERROR: Tiempo de espera agotado para $POD"
         return 1
     }
-
+    
     restart_if_needed() {
         POD=$1
-
+        
         # Saltar el pod del Job
         if echo "$POD" | grep -q "vault-unseal-job"; then
             return 0
         fi
-
+        
         STATUS=$($KUBECTL get pod "$POD" -n "$VAULT_NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null)
-
+        
         if [ "$STATUS" != "Running" ] && [ -n "$STATUS" ]; then
             log "$POD está en $STATUS, reiniciando"
             $KUBECTL delete pod "$POD" -n "$VAULT_NAMESPACE" 2>/dev/null
@@ -153,42 +133,42 @@ data:
             log "ERROR: No se pudo obtener estado de $POD"
             return 1
         fi
-
+        
         return 0
     }
-
+    
     unseal_if_needed() {
         POD=$1
-
+        
         # Saltar el pod del Job
         if echo "$POD" | grep -q "vault-unseal-job"; then
             return 0
         fi
-
+        
         log "Verificando estado de Vault en $POD..."
         VAULT_STATUS=$($KUBECTL exec -n "$VAULT_NAMESPACE" "$POD" -c "$CONTAINER_NAME" -- vault status 2>/dev/null)
-
+        
         if [ $? -ne 0 ] && [ -z "$VAULT_STATUS" ]; then
             log "ERROR: No se pudo obtener el estado de Vault en $POD"
             log "El pod puede estar en CrashLoopBackOff o no tener Vault corriendo"
             return 1
         fi
-
+        
         echo "$VAULT_STATUS"
-
+        
         if echo "$VAULT_STATUS" | grep -q "Sealed.*true"; then
             log "$POD está SELLADO - Iniciando desbloqueo..."
-
+            
             if ! get_unseal_keys; then
                 log "ERROR: No se pudieron obtener las claves de desbloqueo"
                 return 1
             fi
-
+            
             # Intentar desbloquear con la primera clave
             log "Aplicando primera clave de desbloqueo..."
             UNSEAL_RESULT=$($KUBECTL exec -n "$VAULT_NAMESPACE" "$POD" -c "$CONTAINER_NAME" -- vault operator unseal "$UNSEAL_KEY_1" 2>&1)
             UNSEAL_EXIT=$?
-
+            
             if [ $UNSEAL_EXIT -ne 0 ]; then
                 log "ERROR: Falló el desbloqueo con la primera clave"
                 log "Error: $UNSEAL_RESULT"
@@ -196,63 +176,48 @@ data:
                 log "Longitud de la clave: ${#UNSEAL_KEY_1}"
                 return 1
             fi
-
+            
             log "Primera clave aplicada correctamente"
             sleep 3
-
+            
             # Intentar desbloquear con la segunda clave
             log "Aplicando segunda clave de desbloqueo..."
             UNSEAL_RESULT=$($KUBECTL exec -n "$VAULT_NAMESPACE" "$POD" -c "$CONTAINER_NAME" -- vault operator unseal "$UNSEAL_KEY_2" 2>&1)
             UNSEAL_EXIT=$?
-
+            
             if [ $UNSEAL_EXIT -ne 0 ]; then
                 log "ERROR: Falló el desbloqueo con la segunda clave"
                 log "Error: $UNSEAL_RESULT"
                 log "Longitud de la clave: ${#UNSEAL_KEY_2}"
                 return 1
             fi
-
+            
             log "Segunda clave aplicada correctamente"
-            sleep 3
-
-            # Intentar desbloquear con la tercera clave
-            log "Aplicando tercera clave de desbloqueo..."
-            UNSEAL_RESULT=$($KUBECTL exec -n "$VAULT_NAMESPACE" "$POD" -c "$CONTAINER_NAME" -- vault operator unseal "$UNSEAL_KEY_3" 2>&1)
-            UNSEAL_EXIT=$?
-
-            if [ $UNSEAL_EXIT -ne 0 ]; then
-                log "ERROR: Falló el desbloqueo con la tercera clave"
-                log "Error: $UNSEAL_RESULT"
-                log "Longitud de la clave: ${#UNSEAL_KEY_3}"
-                return 1
-            fi
-
-            log "Tercera clave aplicada correctamente"
             sleep 2
-
+            
             log "=== Estado final de $POD ==="
             $KUBECTL exec -n "$VAULT_NAMESPACE" "$POD" -c "$CONTAINER_NAME" -- vault status
-
+            
         else
             log "$POD ya está UNSEALED"
         fi
-
+        
         return 0
     }
-
+    
     monitor_and_unseal() {
         log "========================================="
         log "Iniciando monitoreo continuo de Vault"
         log "Namespace: $VAULT_NAMESPACE"
         log "Secret: $SECRET_NAME"
         log "========================================="
-
+        
         # Verificar que kubectl está disponible
         if [ -z "$KUBECTL" ]; then
             log "ERROR: kubectl no encontrado en el PATH"
             exit 1
         fi
-
+        
         # Verificar que el secret existe
         log "Verificando existencia del Secret..."
         if ! $KUBECTL get secret "$SECRET_NAME" -n "$VAULT_NAMESPACE" &>/dev/null; then
@@ -261,19 +226,19 @@ data:
             $KUBECTL get secrets -n "$VAULT_NAMESPACE" 2>/dev/null || echo "No se pudieron listar secrets"
             exit 1
         fi
-
+        
         # Mostrar las claves disponibles en el secret
         log "Secret encontrado. Claves disponibles:"
         $KUBECTL get secret "$SECRET_NAME" -n "$VAULT_NAMESPACE" -o jsonpath='{.data}' | jq -r 'keys[]' 2>/dev/null || echo "No se pudo listar las claves"
-
+        
         # Loop de monitoreo continuo
         while true; do
             log ""
             log "=== Ciclo de monitoreo $(date '+%Y-%m-%d %H:%M:%S') ==="
-
+            
             # Obtener pods de Vault (excluyendo el job)
             PODS=$($KUBECTL get pods -n "$VAULT_NAMESPACE" --no-headers 2>/dev/null | grep -v "vault-unseal-job" | awk '/^vault-/ {print $1}')
-
+            
             if [ -z "$PODS" ]; then
                 log "No se encontraron pods de Vault en namespace $VAULT_NAMESPACE"
                 log "Pods disponibles:"
@@ -284,14 +249,14 @@ data:
                     log "--------------------------------------"
                     log "Procesando $POD"
                     log "--------------------------------------"
-
+                    
                     # Verificar estado del pod y reiniciar si es necesario
                     restart_if_needed "$POD"
                     if [ $? -ne 0 ]; then
                         log "WARNING: No se pudo verificar/reiniciar $POD, continuando..."
                         continue
                     fi
-
+                    
                     # Verificar estado de Vault y desbloquear si es necesario
                     unseal_if_needed "$POD"
                     if [ $? -ne 0 ]; then
@@ -299,10 +264,10 @@ data:
                     fi
                 done
             fi
-
+            
             log "Esperando 30 segundos para el próximo ciclo de monitoreo..."
             sleep 30
         done
     }
-
+    
     monitor_and_unseal
