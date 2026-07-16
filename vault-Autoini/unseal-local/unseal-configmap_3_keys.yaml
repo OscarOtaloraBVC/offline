@@ -7,8 +7,12 @@ data:
   unseal.sh: |
     #!/bin/sh
 
-    VAULT_NAMESPACE="${VAULT_NAMESPACE:-vault}"
-    CONTAINER_NAME="${CONTAINER_NAME:-vault}"
+    #VAULT_NAMESPACE="${VAULT_NAMESPACE:-vault}"
+    #CONTAINER_NAME="${CONTAINER_NAME:-vault}"
+
+    VAULT_NAMESPACE=$(get_secret "VAULT_NAMESPACE")
+    CONTAINER_NAME=$(get_secret "CONTAINER_NAME")
+    
     SECRET_NAME="${SECRET_NAME:-vault-unseal-keys}"
 
     KUBECTL=$(command -v kubectl)
