@@ -1,3 +1,4 @@
+# kubernetes/backend-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,25 +19,80 @@ spec:
       serviceAccountName: vault-unseal-manager
       containers:
       - name: backend
-        image: rbac-registry:5000/vault-autoini-backend:latest
+        image: rbac-registry:5000/vault-autoini-back:1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: backend
         env:
-        - name: ADMIN_USERNAME
-          value: "admin"
-        - name: ADMIN_PASSWORD
-          value: "admin123"
+        # Variables desde ConfigMap (no sensibles)
+        - name: ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: ALGORITHM
+        - name: ACCESS_TOKEN_EXPIRE_MINUTES
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: ACCESS_TOKEN_EXPIRE_MINUTES
+        - name: VAULT_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: VAULT_ADDR
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: DATABASE_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: LOG_LEVEL
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: KUBERNETES_NAMESPACE
+        - name: CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: CONTAINER_NAME
+        - name: MONITOR_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: MONITOR_INTERVAL
+        
+
+        - name: VAULT_UNSEAL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: vault-unseal-password
+              optional: true
+
+        # Variables desde Secret (sensibles)
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: vault-unseal-secrets
               key: jwt-secret
-        - name: DATABASE_URL
-          value: "sqlite+aiosqlite:////data/keys.db"
-        - name: VAULT_ADDR
-          value: "http://vault.vault:8200"
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: admin-username
+              optional: true  # Opcional, usa default si no existe
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: admin-password
+        
         volumeMounts:
         - name: data
           mountPath: /data

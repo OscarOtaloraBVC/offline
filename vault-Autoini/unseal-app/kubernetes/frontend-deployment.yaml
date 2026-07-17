@@ -17,16 +17,16 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: rbac-registry:5000/vault-autoini-frontend:latest
+        image: rbac-registry:5000/vault-autoini-front:1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: frontend
         env:
         - name: BACKEND_URL
-          value: "http://vault-unseal-backend:8000"
-        - name: API_URL
-          value: "http://vault-unseal-backend:8000/api"
+          value: "http://vault-unseal-backend.vault.svc.cluster.local:8000"
+        # - name: API_URL
+        #   value: "http://vault-unseal-backend:8000/api"
         resources:
           requests:
             memory: "64Mi"

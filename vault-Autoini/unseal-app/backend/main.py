@@ -1,8 +1,10 @@
+# main.py
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from api import auth, keys, monitor, settings
 from core.database import init_db
@@ -19,21 +21,43 @@ async def lifespan(app: FastAPI):
     """Gestiona el ciclo de vida de la aplicación"""
     global monitor_worker
     
-    # Inicializar base de datos
-    await init_db()
+    try:
+        # Inicializar base de datos
+        await init_db()
+        logger.info("✅ Base de datos inicializada")
+    except Exception as e:
+        logger.error(f"❌ Error inicializando base de datos: {e}")
     
-    # Iniciar worker de monitoreo
-    monitor_worker = MonitorWorker()
-    await monitor_worker.start()
+    try:
+        # Iniciar worker de monitoreo
+        monitor_worker = MonitorWorker()
+        
+        # Configurar la contraseña desde variable de entorno
+        vault_unseal_password = os.getenv("VAULT_UNSEAL_PASSWORD")
+        if vault_unseal_password:
+            monitor_worker.set_password(vault_unseal_password)
+            logger.info("✅ Contraseña del worker configurada desde variable de entorno")
+        else:
+            logger.warning("⚠️ VAULT_UNSEAL_PASSWORD no configurada en variables de entorno")
+        
+        await monitor_worker.start()
+        logger.info("✅ Worker de monitoreo iniciado")
+    except Exception as e:
+        logger.error(f"❌ Error iniciando worker: {e}")
     
-    logger.info("Aplicación iniciada correctamente")
+    logger.info("🚀 Aplicación iniciada correctamente")
     
     yield
     
     # Limpieza al cerrar
-    if monitor_worker:
-        await monitor_worker.stop()
-    logger.info("Aplicación cerrada correctamente")
+    try:
+        if monitor_worker:
+            await monitor_worker.stop()
+            logger.info("✅ Worker de monitoreo detenido")
+    except Exception as e:
+        logger.error(f"❌ Error deteniendo worker: {e}")
+    
+    logger.info("👋 Aplicación cerrada correctamente")
 
 app = FastAPI(
     title="Vault Unseal Manager",
@@ -45,7 +69,7 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080"],
+    allow_origins=["http://localhost:3000", "http://localhost:8080", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,15 +79,28 @@ app.add_middleware(
 security = HTTPBearer()
 
 # Incluir routers
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(keys.router, prefix="/api/keys", tags=["keys"])
-app.include_router(monitor.router, prefix="/api/monitor", tags=["monitor"])
-app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(keys.router, prefix="/api", tags=["keys"])
+app.include_router(monitor.router, prefix="/api", tags=["monitor"])
+app.include_router(settings.router, prefix="/api", tags=["settings"])
 
 @app.get("/api/health")
 async def health_check():
     """Endpoint de salud para verificaciones de Kubernetes"""
-    return {"status": "healthy", "worker_running": monitor_worker.is_running() if monitor_worker else False}
+    return {
+        "status": "healthy", 
+        "worker_running": monitor_worker.is_running() if monitor_worker else False
+    }
+
+@app.get("/api/health/live")
+async def liveness_check():
+    """Liveness probe endpoint"""
+    return {"status": "alive"}
+
+@app.get("/api/health/ready")
+async def readiness_check():
+    """Readiness probe endpoint"""
+    return {"status": "ready"}
 
 if __name__ == "__main__":
     import uvicorn

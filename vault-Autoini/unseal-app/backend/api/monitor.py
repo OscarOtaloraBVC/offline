@@ -42,7 +42,7 @@ def set_monitor_worker(worker: MonitorWorker):
     global monitor_worker_instance
     monitor_worker_instance = worker
 
-@router.get("/status", response_model=MonitorStatusResponse)
+@router.get("/monitor/status", response_model=MonitorStatusResponse)
 async def get_monitor_status(user: dict = Depends(get_current_user)):
     """Obtiene el estado actual del monitoreo"""
     try:
@@ -98,7 +98,7 @@ async def get_monitor_status(user: dict = Depends(get_current_user)):
         logger.error(f"Error obteniendo estado del monitor: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/trigger", response_model=TriggerUnsealResponse)
+@router.post("/monitor/trigger", response_model=TriggerUnsealResponse)
 async def trigger_unseal(
     request: TriggerUnsealRequest,
     background_tasks: BackgroundTasks,
@@ -145,7 +145,7 @@ async def trigger_unseal(
         logger.error(f"Error en trigger de unseal: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/restart")
+@router.post("/monitor/restart")
 async def restart_monitor(user: dict = Depends(get_current_user)):
     """Reinicia el worker de monitoreo"""
     global monitor_worker_instance
@@ -166,7 +166,7 @@ async def restart_monitor(user: dict = Depends(get_current_user)):
         logger.error(f"Error reiniciando worker: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/set-password")
+@router.post("/monitor/set-password")
 async def set_worker_password(
     request: dict,
     user: dict = Depends(get_current_user)

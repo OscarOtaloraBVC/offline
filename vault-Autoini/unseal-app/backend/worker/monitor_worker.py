@@ -1,3 +1,4 @@
+# worker/monitor_worker.py
 import asyncio
 import logging
 from typing import Optional
@@ -14,7 +15,7 @@ class MonitorWorker:
     """Worker asíncrono que ejecuta el monitoreo continuo de Vault"""
     
     def __init__(self):
-        self.is_running = False
+        self._running = False  # Cambiado de is_running a _running
         self.task: Optional[asyncio.Task] = None
         self.keystore = SecureKeyStore()
         self.k8s_service = KubernetesService()
@@ -28,17 +29,17 @@ class MonitorWorker:
     
     async def start(self):
         """Inicia el worker de monitoreo"""
-        if self.is_running:
+        if self._running:
             logger.warning("Worker ya está en ejecución")
             return
         
-        self.is_running = True
+        self._running = True
         self.task = asyncio.create_task(self._monitor_loop())
         logger.info("Worker de monitoreo iniciado")
     
     async def stop(self):
         """Detiene el worker de monitoreo"""
-        self.is_running = False
+        self._running = False
         if self.task:
             self.task.cancel()
             try:
@@ -49,7 +50,7 @@ class MonitorWorker:
     
     async def _monitor_loop(self):
         """Loop principal de monitoreo"""
-        while self.is_running:
+        while self._running:
             try:
                 if self.password:
                     logger.info("Ejecutando ciclo de monitoreo...")
@@ -85,4 +86,4 @@ class MonitorWorker:
     
     def is_running(self) -> bool:
         """Verifica si el worker está en ejecución"""
-        return self.is_running and self.task and not self.task.done()
+        return self._running and self.task and not self.task.done()

@@ -43,11 +43,16 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copiar el resto del código
 COPY . /opt/unseal-app/backend/
 
+# Hacer ejecutables los scripts
+RUN chmod +x /opt/unseal-app/backend/bin/*.sh
+
+
 # Crear directorio de datos para SQLite
 RUN mkdir -p /opt/unseal-app/data \
     && chown -R ${APP_USER}:${APP_USER} /opt/unseal-app
 
 USER ${APP_USER}
+ENTRYPOINT ["/opt/unseal-app/backend/bin/entrypoint.sh"]
 
 EXPOSE 8000
 
