@@ -3,6 +3,7 @@ from kubernetes.stream import stream
 import asyncio
 import logging
 import re
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class KubernetesService:
             config.load_kube_config()
         
         self.core_v1 = client.CoreV1Api()
-        self.namespace = "vault"  # Será configurable
+        self.namespace = "vault"
     
     def set_namespace(self, namespace: str):
         self.namespace = namespace
@@ -59,48 +60,119 @@ class KubernetesService:
     
     async def exec_command(self, pod_name: str, container_name: str, command: list) -> tuple:
         """
-        Ejecuta un comando en un contenedor de un pod usando la API de Kubernetes
+        Ejecuta un comando en un contenedor de un pod usando kubectl
         Retorna: (exit_code, stdout, stderr)
         """
         try:
-            # Construir la llamada exec
-            exec_command = command
+            # Construir el comando kubectl
+            cmd = [
+                "kubectl", "exec", pod_name,
+                "-n", self.namespace,
+                "-c", container_name,
+                "--"
+            ] + command
             
-            # Crear la solicitud de streaming
-            resp = stream(
-                self.core_v1.connect_get_namespaced_pod_exec,
-                pod_name,
-                self.namespace,
-                container=container_name,
-                command=exec_command,
-                stderr=True,
-                stdin=False,
-                stdout=True,
-                tty=False
+            logger.debug(f"Ejecutando: {' '.join(cmd)}")
+            
+            # Ejecutar el comando
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30
             )
             
-            # Para comandos que no son interactivos, la respuesta es stdout o stderr
-            # Pero necesitamos manejar ambos casos
-            return 0, resp, ""
+            # Limpiar la salida
+            stdout = result.stdout.strip() if result.stdout else ""
+            stderr = result.stderr.strip() if result.stderr else ""
             
+            return result.returncode, stdout, stderr
+            
+        except subprocess.TimeoutExpired:
+            logger.error(f"Timeout ejecutando comando en {pod_name}")
+            return 1, "", "Timeout"
         except Exception as e:
             logger.error(f"Error ejecutando comando en {pod_name}: {e}")
             return 1, "", str(e)
     
     async def vault_status(self, pod_name: str, container_name: str = "vault") -> dict:
-        """Obtiene el estado de Vault en un pod"""
-        exit_code, stdout, stderr = await self.exec_command(
-            pod_name,
-            container_name,
-            ["vault", "status"]
-        )
-        
-        if exit_code != 0:
-            return {"sealed": True, "error": stderr or stdout}
-        
-        # Parsear la salida para encontrar si está sealed
-        sealed = "Sealed: true" in stdout
-        return {"sealed": sealed, "output": stdout, "error": stderr}
+        """
+        Obtiene el estado de Vault en un pod
+        Retorna un dict con:
+            - sealed: bool (True si está sellado)
+            - output: str (salida del comando)
+            - error: str (mensaje de error si existe)
+        """
+        try:
+            logger.info(f"Consultando estado de Vault en pod: {pod_name}")
+            
+            exit_code, stdout, stderr = await self.exec_command(
+                pod_name,
+                container_name,
+                ["vault", "status"]
+            )
+            
+            # Log para debug
+            logger.info(f"Pod {pod_name}: exit_code={exit_code}, stdout_len={len(stdout)}, stderr_len={len(stderr)}")
+            
+            # Si el comando falló porque el container no existe, retornar error
+            if "container not found" in stderr or "container not found" in stdout:
+                logger.error(f"Container '{container_name}' no encontrado en pod {pod_name}")
+                return {
+                    "sealed": True,
+                    "output": stdout,
+                    "error": f"Contenedor '{container_name}' no encontrado"
+                }
+            
+            # Si el pod no está corriendo
+            if not self.pod_is_running(pod_name):
+                logger.warning(f"Pod {pod_name} no está corriendo")
+                return {
+                    "sealed": True,
+                    "output": stdout,
+                    "error": "Pod no está en estado Running"
+                }
+            
+            # Analizar la salida completa para determinar el estado
+            combined_output = stdout + "\n" + stderr
+            
+            # Buscar la línea "Sealed: true/false"
+            sealed_match = re.search(r'Sealed:\s*(true|false)', combined_output, re.IGNORECASE)
+            
+            if sealed_match:
+                sealed_value = sealed_match.group(1).lower()
+                is_sealed = sealed_value == "true"
+                logger.info(f"Pod {pod_name}: Sealed={is_sealed} (detectado en salida)")
+                return {
+                    "sealed": is_sealed,
+                    "output": stdout,
+                    "error": stderr if stderr else None
+                }
+            
+            # Si no se encontró "Sealed:", intentar determinar por exit_code
+            if exit_code == 0:
+                # Si exit_code es 0, normalmente está desbloqueado
+                logger.info(f"Pod {pod_name}: exit_code=0, asumiendo desbloqueado")
+                return {
+                    "sealed": False,
+                    "output": stdout,
+                    "error": stderr if stderr else None
+                }
+            else:
+                # Si exit_code != 0, está sellado o hay error
+                logger.info(f"Pod {pod_name}: exit_code={exit_code}, asumiendo sellado")
+                return {
+                    "sealed": True,
+                    "output": stdout,
+                    "error": stderr if stderr else f"Exit code: {exit_code}"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error obteniendo estado de Vault para {pod_name}: {e}")
+            return {
+                "sealed": True,
+                "error": str(e)
+            }
     
     async def unseal_vault(self, pod_name: str, key: str, container_name: str = "vault") -> dict:
         """Ejecuta unseal en un pod de Vault"""

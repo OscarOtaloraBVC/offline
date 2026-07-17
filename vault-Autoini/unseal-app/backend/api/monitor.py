@@ -49,6 +49,7 @@ async def get_monitor_status(user: dict = Depends(get_current_user)):
         keystore = SecureKeyStore()
         settings = keystore.get_settings()
         namespace = settings.get("namespace", "vault")
+        container_name = settings.get("container_name", "vault")
         
         k8s = KubernetesService()
         k8s.set_namespace(namespace)
@@ -62,16 +63,32 @@ async def get_monitor_status(user: dict = Depends(get_current_user)):
             pod_name = pod.metadata.name
             is_running = k8s.pod_is_running(pod_name)
             
+            logger.info(f"Procesando pod {pod_name}, running={is_running}")
+            
             # Intentar obtener estado de Vault
             vault_status = {"sealed": True, "error": "No disponible"}
             if is_running:
                 try:
-                    status = await k8s.vault_status(pod_name, settings.get("container_name", "vault"))
+                    status = await k8s.vault_status(pod_name, container_name)
+                    logger.info(f"Status de {pod_name}: {status}")
                     vault_status = status
                 except Exception as e:
                     logger.error(f"Error obteniendo status de {pod_name}: {e}")
+                    vault_status = {"sealed": True, "error": str(e)}
             
+            # Determinar si está sellado
             is_sealed = vault_status.get("sealed", True)
+            
+            # Determinar el estado del pod
+            pod_phase = pod.status.phase if pod.status else "Unknown"
+            
+            # Obtener mensaje de error si existe
+            error_msg = vault_status.get("error")
+            
+            # Si el pod no está corriendo, considerarlo como error
+            if not is_running:
+                error_msg = error_msg or "Pod no está corriendo"
+            
             if is_sealed:
                 sealed += 1
             else:
@@ -81,14 +98,14 @@ async def get_monitor_status(user: dict = Depends(get_current_user)):
                 "name": pod_name,
                 "running": is_running,
                 "sealed": is_sealed,
-                "status": pod.status.phase,
+                "status": pod_phase,
                 "vault_status": vault_status.get("output", ""),
-                "error": vault_status.get("error", "")
+                "error": error_msg
             })
         
         return MonitorStatusResponse(
             running=monitor_worker_instance.is_running() if monitor_worker_instance else False,
-            last_check=None,  # Podríamos almacenar el último check en memoria
+            last_check=None,
             pods_status=pods_status,
             total_pods=len(pods_status),
             sealed_pods=sealed,
@@ -154,13 +171,8 @@ async def restart_monitor(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Worker no inicializado")
     
     try:
-        # Detener worker
         await monitor_worker_instance.stop()
-        
-        # Iniciar worker nuevamente (requiere contraseña)
-        # La contraseña se debe configurar desde el frontend
         await monitor_worker_instance.start()
-        
         return {"message": "Worker reiniciado correctamente"}
     except Exception as e:
         logger.error(f"Error reiniciando worker: {e}")
@@ -182,7 +194,6 @@ async def set_worker_password(
         raise HTTPException(status_code=404, detail="Worker no inicializado")
     
     try:
-        # Verificar que la contraseña puede descifrar las llaves
         keystore = SecureKeyStore()
         keys = keystore.get_keys(password)
         
@@ -192,7 +203,6 @@ async def set_worker_password(
                 detail="No se pudieron descifrar las llaves con la contraseña proporcionada"
             )
         
-        # Configurar contraseña en el worker
         monitor_worker_instance.set_password(password)
         
         return {"message": "Contraseña configurada correctamente", "keys_count": len(keys)}

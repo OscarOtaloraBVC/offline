@@ -38,8 +38,17 @@ class UnsealService:
             "error": None
         }
         
-        # Primero verificar estado actual
-        status = await self.k8s.vault_status(pod_name, container_name)
+        # Primero verificar que el pod esté corriendo
+        if not self.k8s.pod_is_running(pod_name):
+            result["error"] = f"Pod {pod_name} no está corriendo"
+            return result
+        
+        # Verificar estado actual
+        try:
+            status = await self.k8s.vault_status(pod_name, container_name)
+        except Exception as e:
+            result["error"] = f"Error obteniendo estado: {str(e)}"
+            return result
         
         if not status.get("sealed", True):
             result["success"] = True
@@ -48,36 +57,52 @@ class UnsealService:
         
         # Aplicar llaves secuencialmente
         keys_to_use = keys[:threshold]
+        logger.info(f"🔑 Aplicando {len(keys_to_use)} llaves a {pod_name}")
         
-        for i, key in enumerate(keys_to_use):
+        for i, key in enumerate(keys_to_use, 1):
             try:
-                logger.info(f"Aplicando llave {i+1}/{threshold} a {pod_name}")
+                logger.info(f"  🔑 Aplicando llave {i}/{len(keys_to_use)} a {pod_name}")
                 
                 unseal_result = await self.k8s.unseal_vault(pod_name, key, container_name)
                 
-                if unseal_result["success"]:
-                    result["details"].append(f"Llave {i+1} aplicada correctamente")
+                if unseal_result.get("success", False):
+                    result["details"].append(f"Llave {i} aplicada correctamente")
                     result["keys_applied"] += 1
                     
                     # Verificar si ya está desbloqueado
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1)
                     status = await self.k8s.vault_status(pod_name, container_name)
                     
                     if not status.get("sealed", True):
                         result["success"] = True
-                        result["details"].append("Pod desbloqueado exitosamente")
+                        result["details"].append("✅ Pod desbloqueado exitosamente")
+                        logger.info(f"✅ Pod {pod_name} desbloqueado con {i} llaves")
                         break
                 else:
-                    result["details"].append(f"Error aplicando llave {i+1}: {unseal_result['error']}")
-                    result["error"] = unseal_result['error']
+                    error_msg = unseal_result.get('error', 'Error desconocido')
+                    result["details"].append(f"❌ Error aplicando llave {i}: {error_msg}")
+                    result["error"] = error_msg
                     
-                    # Si falla una llave, interrumpir el proceso
-                    break
+                    # Si falla una llave, continuar con la siguiente
+                    logger.warning(f"⚠️ Falló llave {i} para {pod_name}, probando siguiente...")
+                    continue
                     
             except Exception as e:
-                logger.error(f"Error en unseal de {pod_name}: {e}")
+                logger.error(f"❌ Error en unseal de {pod_name}: {e}")
                 result["error"] = str(e)
-                break
+                # Continuar con la siguiente llave
+                continue
+        
+        # Verificar estado final
+        if not result["success"]:
+            # Intentar verificar si al menos se desbloqueó parcialmente
+            try:
+                status = await self.k8s.vault_status(pod_name, container_name)
+                if not status.get("sealed", True):
+                    result["success"] = True
+                    result["details"].append("✅ Pod fue desbloqueado en proceso")
+            except:
+                pass
         
         return result
     
@@ -93,35 +118,58 @@ class UnsealService:
         keys = await self.get_unseal_keys(password)
         
         if not keys:
-            logger.error("No se encontraron llaves de desbloqueo")
+            logger.error("❌ No se encontraron llaves de desbloqueo")
             return {"success": False, "error": "No hay llaves configuradas", "pods": []}
         
         # Obtener pods
         pods = self.k8s.get_vault_pods()
         
         if not pods:
-            logger.info("No se encontraron pods de Vault")
+            logger.info("ℹ️ No se encontraron pods de Vault")
             return {"success": True, "pods": [], "message": "No hay pods de Vault"}
         
         results = []
         
         for pod in pods:
-            pod_name = pod.metadata.name
-            logger.info(f"Procesando {pod_name}")
-            
-            # Verificar que el pod está corriendo
-            if not self.k8s.pod_is_running(pod_name):
-                logger.info(f"Pod {pod_name} no está Running, reiniciando...")
-                await self.k8s.restart_pod(pod_name)
-                await self.k8s.wait_for_pod_ready(pod_name)
-            
-            # Desbloquear si es necesario
-            unseal_result = await self.unseal_pod(pod_name, keys, threshold, container_name)
-            results.append(unseal_result)
+            try:
+                pod_name = pod.metadata.name
+                logger.info(f"📦 Procesando {pod_name}")
+                
+                # Verificar que el pod está corriendo
+                if not self.k8s.pod_is_running(pod_name):
+                    logger.info(f"⚠️ Pod {pod_name} no está Running, intentando reiniciar...")
+                    await self.k8s.restart_pod(pod_name)
+                    # Esperar un tiempo limitado
+                    await asyncio.sleep(30)
+                    
+                    # Si sigue sin correr, continuar con el siguiente
+                    if not self.k8s.pod_is_running(pod_name):
+                        logger.warning(f"⚠️ Pod {pod_name} no se recuperó, saltando")
+                        results.append({
+                            "pod": pod_name,
+                            "success": False,
+                            "error": "Pod no se recuperó después del reinicio"
+                        })
+                        continue
+                
+                # Desbloquear si es necesario
+                unseal_result = await self.unseal_pod(pod_name, keys, threshold, container_name)
+                results.append(unseal_result)
+                
+                # Pequeña pausa entre pods
+                await asyncio.sleep(1)
+                
+            except Exception as e:
+                logger.error(f"❌ Error procesando {pod_name}: {e}")
+                results.append({
+                    "pod": pod_name if 'pod_name' in locals() else "unknown",
+                    "success": False,
+                    "error": str(e)
+                })
         
         return {
             "success": True,
             "pods": results,
             "total": len(results),
-            "unsealed": sum(1 for r in results if r["success"])
+            "unsealed": sum(1 for r in results if r.get("success", False))
         }

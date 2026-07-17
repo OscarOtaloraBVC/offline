@@ -20,12 +20,17 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
+  InputAdornment,
+  Visibility,
+  VisibilityOff,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   SwapVert as SwapIcon,
   VpnKey as KeyIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -38,20 +43,36 @@ const KeyManager = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [password, setPassword] = useState('');
+  const [viewPassword, setViewPassword] = useState('');
+  const [showKeys, setShowKeys] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
     loadKeys();
   }, []);
 
-  const loadKeys = async () => {
+  const loadKeys = async (passwordParam = null) => {
     try {
       setLoading(true);
-      const response = await api.get('/keys');
+      let url = '/keys';
+      if (passwordParam) {
+        url += `?password=${encodeURIComponent(passwordParam)}`;
+      }
+      const response = await api.get(url);
       setKeys(response.data.keys || []);
       setThreshold(response.data.threshold || 2);
+      if (passwordParam && response.data.keys.length > 0) {
+        setShowKeys(true);
+        toast.success(`Se cargaron ${response.data.keys.length} llaves`);
+      } else if (passwordParam && response.data.keys.length === 0) {
+        toast.error('No se encontraron llaves o la contraseña es incorrecta');
+        setShowKeys(false);
+      }
     } catch (error) {
-      toast.error('Error cargando llaves');
+      toast.error(error.response?.data?.detail || 'Error cargando llaves');
+      setKeys([]);
+      setShowKeys(false);
     } finally {
       setLoading(false);
     }
@@ -77,7 +98,12 @@ const KeyManager = () => {
       setDialogOpen(false);
       setNewKey('');
       setPassword('');
-      await loadKeys();
+      // Recargar las llaves si ya están visibles
+      if (showKeys) {
+        await loadKeys(viewPassword);
+      } else {
+        await loadKeys();
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error añadiendo llave');
     }
@@ -96,14 +122,17 @@ const KeyManager = () => {
         data: { password: pwd },
       });
       toast.success('Llave eliminada correctamente');
-      await loadKeys();
+      if (showKeys) {
+        await loadKeys(viewPassword);
+      } else {
+        await loadKeys();
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error eliminando llave');
     }
   };
 
   const handleReorder = async () => {
-    // Simulación simple de reorden (intercambiar dos últimas)
     if (keys.length < 2) {
       toast.error('Se necesitan al menos 2 llaves para reordenar');
       return;
@@ -123,10 +152,26 @@ const KeyManager = () => {
         password: pwd,
       });
       toast.success('Orden actualizado correctamente');
-      await loadKeys();
+      if (showKeys) {
+        await loadKeys(viewPassword);
+      } else {
+        await loadKeys();
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error reordenando llaves');
     }
+  };
+
+  const handleViewKeys = () => {
+    if (!viewPassword) {
+      toast.error('Ingresa la contraseña del admin');
+      return;
+    }
+    loadKeys(viewPassword);
+  };
+
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   if (loading) {
@@ -174,6 +219,56 @@ const KeyManager = () => {
           Threshold actual: <strong>{threshold}</strong> - Se requieren {threshold} llaves para desbloquear Vault
         </Alert>
 
+        {/* Campo para ver las llaves */}
+        <Paper sx={{ p: 2, mb: 3, background: 'rgba(0, 188, 212, 0.05)' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Ver llaves almacenadas
+          </Typography>
+          <Box display="flex" gap={2} alignItems="center">
+            <TextField
+              label="Contraseña del Admin"
+              type={showPassword ? 'text' : 'password'}
+              value={viewPassword}
+              onChange={(e) => setViewPassword(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleViewKeys();
+                }
+              }}
+              sx={{ flex: 1 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleTogglePasswordVisibility}>
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              helperText="Ingresa la contraseña para ver las llaves almacenadas"
+            />
+            <Button
+              variant="contained"
+              onClick={handleViewKeys}
+              sx={{
+                background: 'linear-gradient(45deg, #00bcd4 30%, #00acc1 90%)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #00acc1 30%, #00838f 90%)',
+                },
+              }}
+            >
+              Ver Llaves
+            </Button>
+            {showKeys && (
+              <Chip
+                label={`${keys.length} llaves visibles`}
+                color="success"
+                size="small"
+              />
+            )}
+          </Box>
+        </Paper>
+
         <TableContainer>
           <Table>
             <TableHead>
@@ -185,7 +280,7 @@ const KeyManager = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {keys.map((key, index) => (
+              {showKeys && keys.map((key, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>
@@ -212,7 +307,16 @@ const KeyManager = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {keys.length === 0 && (
+              {!showKeys && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    <Typography color="textSecondary" sx={{ py: 3 }}>
+                      🔒 Ingresa la contraseña del admin para ver las llaves almacenadas
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+              {showKeys && keys.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} align="center">
                     <Typography color="textSecondary" sx={{ py: 3 }}>
@@ -226,6 +330,7 @@ const KeyManager = () => {
         </TableContainer>
       </Paper>
 
+      {/* Diálogo para añadir llave */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Añadir Nueva Llave de Unseal</DialogTitle>
         <DialogContent>
