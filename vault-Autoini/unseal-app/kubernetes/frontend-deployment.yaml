@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-unseal-frontend
+  namespace: vault
+  labels:
+    app: vault-unseal-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-unseal-frontend
+  template:
+    metadata:
+      labels:
+        app: vault-unseal-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: rbac-registry:5000/vault-autoini-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: frontend
+        env:
+        - name: BACKEND_URL
+          value: "http://vault-unseal-backend:8000"
+        - name: API_URL
+          value: "http://vault-unseal-backend:8000/api"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5

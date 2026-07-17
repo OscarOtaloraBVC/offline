@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-unseal-backend
+  namespace: vault
+  labels:
+    app: vault-unseal-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-unseal-backend
+  template:
+    metadata:
+      labels:
+        app: vault-unseal-backend
+    spec:
+      serviceAccountName: vault-unseal-manager
+      containers:
+      - name: backend
+        image: rbac-registry:5000/vault-autoini-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: backend
+        env:
+        - name: ADMIN_USERNAME
+          value: "admin"
+        - name: ADMIN_PASSWORD
+          value: "admin123"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: jwt-secret
+        - name: DATABASE_URL
+          value: "sqlite+aiosqlite:////data/keys.db"
+        - name: VAULT_ADDR
+          value: "http://vault.vault:8200"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: vault-unseal-data
