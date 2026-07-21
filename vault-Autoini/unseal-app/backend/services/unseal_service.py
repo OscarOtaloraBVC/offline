@@ -55,7 +55,7 @@ class UnsealService:
             result["details"].append("Pod ya está desbloqueado")
             return result
         
-        # Aplicar llaves secuencialmente
+        # Aplicar llaves secuencialmente hasta el threshold
         keys_to_use = keys[:threshold]
         logger.info(f"🔑 Aplicando {len(keys_to_use)} llaves a {pod_name}")
         
@@ -69,7 +69,7 @@ class UnsealService:
                     result["details"].append(f"Llave {i} aplicada correctamente")
                     result["keys_applied"] += 1
                     
-                    # Verificar si ya está desbloqueado
+                    # Verificar si ya está desbloqueado después de aplicar esta llave
                     await asyncio.sleep(1)
                     status = await self.k8s.vault_status(pod_name, container_name)
                     
@@ -77,25 +77,20 @@ class UnsealService:
                         result["success"] = True
                         result["details"].append("✅ Pod desbloqueado exitosamente")
                         logger.info(f"✅ Pod {pod_name} desbloqueado con {i} llaves")
-                        break
+                        return result
                 else:
                     error_msg = unseal_result.get('error', 'Error desconocido')
                     result["details"].append(f"❌ Error aplicando llave {i}: {error_msg}")
                     result["error"] = error_msg
-                    
-                    # Si falla una llave, continuar con la siguiente
-                    logger.warning(f"⚠️ Falló llave {i} para {pod_name}, probando siguiente...")
                     continue
                     
             except Exception as e:
                 logger.error(f"❌ Error en unseal de {pod_name}: {e}")
                 result["error"] = str(e)
-                # Continuar con la siguiente llave
                 continue
         
         # Verificar estado final
         if not result["success"]:
-            # Intentar verificar si al menos se desbloqueó parcialmente
             try:
                 status = await self.k8s.vault_status(pod_name, container_name)
                 if not status.get("sealed", True):

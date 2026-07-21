@@ -154,23 +154,35 @@ async def update_password(
     """Actualiza la contraseña del admin"""
     global ADMIN_PASSWORD_HASH
     
-    # Truncar contraseñas por si acaso
     current_password = request.current_password[:72] if len(request.current_password) > 72 else request.current_password
     new_password = request.new_password[:72] if len(request.new_password) > 72 else request.new_password
     
-    # Verificar contraseña actual
     if not verify_password(current_password, ADMIN_PASSWORD_HASH):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Contraseña actual incorrecta"
         )
     
-    # Actualizar contraseña
     ADMIN_PASSWORD_HASH = pwd_context.hash(new_password)
     
-    logger.info("✅ Contraseña de admin actualizada correctamente")
+    # ✅ ACTUALIZAR LA CONTRASEÑA DEL WORKER Y VERIFICAR LLAVES
+    try:
+        from main import monitor_worker
+        if monitor_worker:
+            # Primero intentar descifrar llaves con la nueva contraseña
+            from core.crypto import SecureKeyStore
+            keystore = SecureKeyStore()
+            try:
+                keys = keystore.get_keys(new_password)
+                monitor_worker.set_password(new_password)
+                logger.info(f"✅ Worker actualizado. Llaves disponibles: {len(keys)}")
+            except Exception as e:
+                logger.error(f"❌ La nueva contraseña NO puede descifrar las llaves: {e}")
+                # Podrías lanzar un error aquí si es requerido
+                # raise HTTPException(status_code=400, detail="La nueva contraseña no puede descifrar las llaves")
+    except Exception as e:
+        logger.error(f"Error actualizando worker: {e}")
     
-    # NOTA: En producción, deberías persistir esto en la base de datos
-    # o actualizar el Secret en Kubernetes
+    logger.info("✅ Contraseña de admin actualizada correctamente")
     
     return {"message": "Contraseña actualizada correctamente"}

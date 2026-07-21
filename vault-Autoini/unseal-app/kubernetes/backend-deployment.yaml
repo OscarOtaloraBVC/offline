@@ -19,103 +19,171 @@ spec:
       serviceAccountName: vault-unseal-manager
       containers:
       - name: backend
-        image: rbac-registry:5000/vault-autoini-back:1.3
+        image: rbac-registry:5000/vault-autoini-back:1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
           name: backend
+          protocol: TCP
         env:
-        # Variables desde ConfigMap (no sensibles)
+        # ============================================
+        # CONFIGURACIÓN DESDE CONFIGMAP (No sensible)
+        # ============================================
         - name: ALGORITHM
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: ALGORITHM
+              optional: true
         - name: ACCESS_TOKEN_EXPIRE_MINUTES
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: ACCESS_TOKEN_EXPIRE_MINUTES
+              optional: true
         - name: VAULT_ADDR
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: VAULT_ADDR
+              optional: true
         - name: DATABASE_URL
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: DATABASE_URL
+              optional: true
         - name: LOG_LEVEL
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: LOG_LEVEL
+              optional: true
         - name: KUBERNETES_NAMESPACE
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: KUBERNETES_NAMESPACE
+              optional: true
         - name: CONTAINER_NAME
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: CONTAINER_NAME
+              optional: true
         - name: MONITOR_INTERVAL
           valueFrom:
             configMapKeyRef:
               name: vault-unseal-config
               key: MONITOR_INTERVAL
-        
+              optional: true
 
+        # ============================================
+        # CONFIGURACIÓN DESDE SECRET (Sensible)
+        # ============================================
+        # 🔑 CONTRASEÑA PARA DESCIFRAR LLAVES (Worker)
         - name: VAULT_UNSEAL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: vault-unseal-secrets
               key: vault-unseal-password
-              optional: true
+              optional: false  # REQUERIDO para que el worker funcione
 
-        # Variables desde Secret (sensibles)
+        # 🔐 SECRET KEY PARA JWT
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: vault-unseal-secrets
               key: jwt-secret
+              optional: false
+
+        # 👤 ADMIN CREDENTIALS
         - name: ADMIN_USERNAME
           valueFrom:
             secretKeyRef:
               name: vault-unseal-secrets
               key: admin-username
-              optional: true  # Opcional, usa default si no existe
+              optional: true  # Usa default "admin" si no existe
+
         - name: ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
               name: vault-unseal-secrets
               key: admin-password
-        
+              optional: false
+
+        # ============================================
+        # VOLUMENES
+        # ============================================
         volumeMounts:
         - name: data
           mountPath: /data
+        - name: keys-data
+          mountPath: /opt/unseal-app/data
+        - name: tmp
+          mountPath: /tmp
+
+        # ============================================
+        # RECURSOS
+        # ============================================
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
             memory: "256Mi"
             cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # ============================================
+        # HEALTH CHECKS
+        # ============================================
         livenessProbe:
           httpGet:
-            path: /api/health
+            path: /api/health/live
             port: 8000
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
         readinessProbe:
           httpGet:
-            path: /api/health
+            path: /api/health/ready
             port: 8000
           initialDelaySeconds: 10
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # ============================================
+        # SEGURIDAD
+        # ============================================
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+
+      # ============================================
+      # VOLÚMENES
+      # ============================================
       volumes:
       - name: data
         persistentVolumeClaim:
           claimName: vault-unseal-data
+      - name: keys-data
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: tmp
+        emptyDir:
+          sizeLimit: 50Mi
+
+      # ============================================
+      # OTRAS CONFIGURACIONES
+      # ============================================
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

@@ -191,19 +191,13 @@ const MonitorDashboard = () => {
                     <RefreshIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title={status?.running ? 'Worker activo' : 'Worker inactivo'}>
-                  <Chip
-                    label={status?.running ? 'Activo' : 'Inactivo'}
-                    color={status?.running ? 'success' : 'error'}
-                    size="small"
-                  />
-                </Tooltip>
               </Box>
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ background: 'rgba(0, 188, 212, 0.1)' }}>
+              {/* Cambio principal: usar xs={4} en lugar de xs={12} sm={6} md={3} */}
+              <Grid item xs={4}>
+                <Card sx={{ background: 'rgba(0, 188, 212, 0.1)', height: '100%' }}>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
                       Total Pods
@@ -214,8 +208,8 @@ const MonitorDashboard = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ background: 'rgba(255, 193, 7, 0.1)' }}>
+              <Grid item xs={4}>
+                <Card sx={{ background: 'rgba(255, 193, 7, 0.1)', height: '100%' }}>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
                       Sellados
@@ -226,26 +220,14 @@ const MonitorDashboard = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ background: 'rgba(76, 175, 80, 0.1)' }}>
+              <Grid item xs={4}>
+                <Card sx={{ background: 'rgba(76, 175, 80, 0.1)', height: '100%' }}>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
                       Desbloqueados
                     </Typography>
                     <Typography variant="h4" color="success.main">
                       {status?.unsealed_pods || 0}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{ background: 'rgba(156, 39, 176, 0.1)' }}>
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Worker
-                    </Typography>
-                    <Typography variant="h4">
-                      {status?.running ? '🟢' : '🔴'}
                     </Typography>
                   </CardContent>
                 </Card>

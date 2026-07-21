@@ -132,36 +132,6 @@ const KeyManager = () => {
     }
   };
 
-  const handleReorder = async () => {
-    if (keys.length < 2) {
-      toast.error('Se necesitan al menos 2 llaves para reordenar');
-      return;
-    }
-
-    const pwd = prompt('Ingresa la contraseña del admin para reordenar:');
-    if (!pwd) return;
-
-    try {
-      const order = keys.map((_, i) => i + 1);
-      // Intercambiar los dos últimos
-      const last = order.length - 1;
-      [order[last - 1], order[last]] = [order[last], order[last - 1]];
-      
-      await api.post('/keys/reorder', {
-        order: order,
-        password: pwd,
-      });
-      toast.success('Orden actualizado correctamente');
-      if (showKeys) {
-        await loadKeys(viewPassword);
-      } else {
-        await loadKeys();
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Error reordenando llaves');
-    }
-  };
-
   const handleViewKeys = () => {
     if (!viewPassword) {
       toast.error('Ingresa la contraseña del admin');
@@ -191,14 +161,6 @@ const KeyManager = () => {
             Gestión de Llaves de Unseal
           </Typography>
           <Box>
-            <Button
-              variant="outlined"
-              startIcon={<SwapIcon />}
-              onClick={handleReorder}
-              sx={{ mr: 1 }}
-            >
-              Reordenar
-            </Button>
             <Button
               variant="contained"
               startIcon={<AddIcon />}

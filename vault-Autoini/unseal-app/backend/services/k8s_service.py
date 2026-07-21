@@ -1,9 +1,12 @@
+# services/k8s_service.py
+
 from kubernetes import client, config
 from kubernetes.stream import stream
 import asyncio
 import logging
 import re
 import subprocess
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -38,25 +41,25 @@ class KubernetesService:
             logger.error(f"Error al obtener pods: {e}")
             return []
     
-    def pod_is_running(self, pod_name: str) -> bool:
-        """Verifica si un pod está en estado Running y Ready"""
+    def get_pod_phase(self, pod_name: str) -> str:
+        """Obtiene la fase del pod"""
         try:
             pod = self.core_v1.read_namespaced_pod(pod_name, self.namespace)
-            
-            if pod.status.phase != "Running":
-                return False
-            
-            # Verificar que todos los contenedores están ready
-            if pod.status.container_statuses:
-                for container_status in pod.status.container_statuses:
-                    if not container_status.ready:
-                        return False
-                return True
-            
-            return False
+            return pod.status.phase if pod.status else "Unknown"
         except Exception as e:
-            logger.error(f"Error al verificar pod {pod_name}: {e}")
-            return False
+            logger.error(f"Error al obtener fase del pod {pod_name}: {e}")
+            return "Unknown"
+    
+    def pod_is_running(self, pod_name: str) -> bool:
+        """
+        Verifica si un pod está en estado Running
+        Simplificado: solo verifica que la fase sea Running
+        """
+        phase = self.get_pod_phase(pod_name)
+        is_running = phase == "Running"
+        if not is_running:
+            logger.debug(f"Pod {pod_name} no está Running, fase: {phase}")
+        return is_running
     
     async def exec_command(self, pod_name: str, container_name: str, command: list) -> tuple:
         """
@@ -106,6 +109,15 @@ class KubernetesService:
         try:
             logger.info(f"Consultando estado de Vault en pod: {pod_name}")
             
+            # Primero verificar que el pod esté Running
+            if not self.pod_is_running(pod_name):
+                logger.warning(f"Pod {pod_name} no está Running")
+                return {
+                    "sealed": True,
+                    "output": "",
+                    "error": "Pod no está en estado Running"
+                }
+            
             exit_code, stdout, stderr = await self.exec_command(
                 pod_name,
                 container_name,
@@ -113,10 +125,10 @@ class KubernetesService:
             )
             
             # Log para debug
-            logger.info(f"Pod {pod_name}: exit_code={exit_code}, stdout_len={len(stdout)}, stderr_len={len(stderr)}")
+            logger.info(f"Pod {pod_name}: exit_code={exit_code}")
             
-            # Si el comando falló porque el container no existe, retornar error
-            if "container not found" in stderr or "container not found" in stdout:
+            # Si el comando falló porque el container no existe
+            if "container not found" in stderr.lower():
                 logger.error(f"Container '{container_name}' no encontrado en pod {pod_name}")
                 return {
                     "sealed": True,
@@ -124,16 +136,7 @@ class KubernetesService:
                     "error": f"Contenedor '{container_name}' no encontrado"
                 }
             
-            # Si el pod no está corriendo
-            if not self.pod_is_running(pod_name):
-                logger.warning(f"Pod {pod_name} no está corriendo")
-                return {
-                    "sealed": True,
-                    "output": stdout,
-                    "error": "Pod no está en estado Running"
-                }
-            
-            # Analizar la salida completa para determinar el estado
+            # Analizar la salida para determinar el estado
             combined_output = stdout + "\n" + stderr
             
             # Buscar la línea "Sealed: true/false"
@@ -142,25 +145,24 @@ class KubernetesService:
             if sealed_match:
                 sealed_value = sealed_match.group(1).lower()
                 is_sealed = sealed_value == "true"
-                logger.info(f"Pod {pod_name}: Sealed={is_sealed} (detectado en salida)")
+                logger.info(f"Pod {pod_name}: Sealed={is_sealed}")
                 return {
                     "sealed": is_sealed,
                     "output": stdout,
                     "error": stderr if stderr else None
                 }
             
-            # Si no se encontró "Sealed:", intentar determinar por exit_code
+            # Si no se encontró "Sealed:", determinar por exit_code
+            # Vault status devuelve exit_code 0 cuando está desbloqueado, 2 cuando está sellado
             if exit_code == 0:
-                # Si exit_code es 0, normalmente está desbloqueado
-                logger.info(f"Pod {pod_name}: exit_code=0, asumiendo desbloqueado")
+                logger.info(f"Pod {pod_name}: exit_code=0, desbloqueado")
                 return {
                     "sealed": False,
                     "output": stdout,
                     "error": stderr if stderr else None
                 }
             else:
-                # Si exit_code != 0, está sellado o hay error
-                logger.info(f"Pod {pod_name}: exit_code={exit_code}, asumiendo sellado")
+                logger.info(f"Pod {pod_name}: exit_code={exit_code}, sellado")
                 return {
                     "sealed": True,
                     "output": stdout,
@@ -199,16 +201,32 @@ class KubernetesService:
             logger.error(f"Error al reiniciar pod {pod_name}: {e}")
             return False
     
-    async def wait_for_pod_ready(self, pod_name: str, timeout: int = 150) -> bool:
-        """Espera hasta que el pod esté Running y Ready"""
-        import time
+    async def wait_for_pod_running(self, pod_name: str, timeout: int = 30, check_interval: int = 2) -> bool:
+        """
+        Espera hasta que el pod esté en fase Running
+        """
+        start_time = time.time()
         
-        for i in range(timeout // 5):  # 5 segundos de intervalo
-            if self.pod_is_running(pod_name):
-                return True
-            
-            logger.info(f"Esperando que {pod_name} esté ready... ({i*5}s)")
-            await asyncio.sleep(5)
+        while time.time() - start_time < timeout:
+            try:
+                phase = self.get_pod_phase(pod_name)
+                elapsed = int(time.time() - start_time)
+                
+                if phase == "Running":
+                    logger.info(f"✅ Pod {pod_name} está Running (tomó {elapsed}s)")
+                    return True
+                
+                if phase in ["Failed", "Error", "Unknown"]:
+                    logger.warning(f"⚠️ Pod {pod_name} en estado {phase}, elapsed={elapsed}s")
+                    # Si está en Failed, no esperar más
+                    return False
+                
+                logger.info(f"⏳ Pod {pod_name}: fase={phase}, elapsed={elapsed}s")
+                await asyncio.sleep(check_interval)
+                
+            except Exception as e:
+                logger.error(f"Error verificando estado de {pod_name}: {e}")
+                await asyncio.sleep(check_interval)
         
-        logger.error(f"Timeout esperando que {pod_name} esté ready")
+        logger.error(f"❌ Timeout ({timeout}s) esperando que {pod_name} esté Running")
         return False
