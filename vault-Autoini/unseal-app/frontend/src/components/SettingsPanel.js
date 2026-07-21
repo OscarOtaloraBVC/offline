@@ -296,7 +296,7 @@ const SettingsPanel = () => {
               <Typography variant="body2">
                 <strong>Nota de Seguridad:</strong> Las llaves de unseal se almacenan cifradas
                 con AES-256-GCM. La contraseña del admin se utiliza para derivar la llave maestra
-                usando PBKDF2 con 600,000 iteraciones.
+                usando PBKDF2.
               </Typography>
             </Alert>
           </Paper>
