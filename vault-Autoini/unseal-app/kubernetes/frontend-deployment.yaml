@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: rbac-registry:5000/vault-autoini-front:1.0
+        image: rbac-registry:5000/vault-autoini-front:3.0
         imagePullPolicy: Always
         ports:
         - containerPort: 80

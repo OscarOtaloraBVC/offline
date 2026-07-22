@@ -19,7 +19,7 @@ spec:
       serviceAccountName: vault-unseal-manager
       containers:
       - name: backend
-        image: rbac-registry:5000/vault-autoini-back:1.0
+        image: rbac-registry:5000/vault-autoini-back:3.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
