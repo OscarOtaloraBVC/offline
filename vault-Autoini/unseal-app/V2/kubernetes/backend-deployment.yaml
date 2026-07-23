@@ -1,0 +1,164 @@
+# kubernetes/backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-unseal-backend
+  namespace: vault
+  labels:
+    app: vault-unseal-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-unseal-backend
+  template:
+    metadata:
+      labels:
+        app: vault-unseal-backend
+    spec:
+      serviceAccountName: vault-unseal-manager
+      containers:
+      - name: backend
+        image: rbac-registry:5000/vault-autoini-back-v2:1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: backend
+          protocol: TCP
+        env:
+        # ConfigMap
+        - name: ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: ALGORITHM
+              optional: true
+        - name: ACCESS_TOKEN_EXPIRE_MINUTES
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: ACCESS_TOKEN_EXPIRE_MINUTES
+              optional: true
+        - name: VAULT_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: VAULT_ADDR
+              optional: true
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: DATABASE_URL
+              optional: true
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: LOG_LEVEL
+              optional: true
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: KUBERNETES_NAMESPACE
+              optional: true
+        - name: CONTAINER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: CONTAINER_NAME
+              optional: true
+        - name: MONITOR_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: vault-unseal-config
+              key: MONITOR_INTERVAL
+              optional: true
+
+        # Secret - Ahora VAULT_UNSEAL_PASSWORD es opcional
+        - name: VAULT_UNSEAL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: vault-unseal-password
+              optional: true
+
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: jwt-secret
+              optional: false
+
+        - name: ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: admin-username
+              optional: true
+
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vault-unseal-secrets
+              key: admin-password
+              optional: false
+
+        # Volúmenes
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: tmp
+          mountPath: /tmp
+
+        # Recursos
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /api/health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /api/health/ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # Seguridad
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+
+      # Volúmenes
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: vault-unseal-data
+      - name: tmp
+        emptyDir:
+          sizeLimit: 50Mi
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

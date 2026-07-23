@@ -1,0 +1,22 @@
+# kubernetes/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-unseal-config
+  namespace: vault
+  labels:
+    app: vault-unseal-backend
+data:
+  # Configuraciones de autenticación
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "480"
+  
+  # Configuraciones de la aplicación
+  VAULT_ADDR: "http://vault.vault:8200"
+  DATABASE_URL: "sqlite+aiosqlite:////data/keys.db"  # ✅ Persistente en PVC
+  LOG_LEVEL: "INFO"
+  
+  # Configuraciones de Kubernetes
+  KUBERNETES_NAMESPACE: "vault"
+  CONTAINER_NAME: "vault"
+  MONITOR_INTERVAL: "30"
