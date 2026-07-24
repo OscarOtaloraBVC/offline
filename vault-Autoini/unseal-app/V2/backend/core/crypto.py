@@ -345,3 +345,28 @@ class SecureKeyStore:
         except Exception as e:
             logger.warning(f"⚠️ Prueba de contraseña falló: {e}")
             return False
+
+    def get_encrypted_keys(self) -> List[str]:
+        """Obtiene las llaves cifradas (sin descifrar) - para backup"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT encrypted_key FROM keys ORDER BY key_index")
+        rows = cursor.fetchall()
+        conn.close()
+        return [row[0] for row in rows]
+    
+    def restore_encrypted_keys(self, encrypted_keys: List[str]):
+        """Restaura llaves cifradas desde backup"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM keys")
+        
+        for idx, enc_key in enumerate(encrypted_keys, 1):
+            cursor.execute(
+                "INSERT INTO keys (key_index, encrypted_key) VALUES (?, ?)",
+                (idx, enc_key)
+            )
+        
+        conn.commit()
+        conn.close()
+        logger.info(f"✅ {len(encrypted_keys)} llaves restauradas desde backup")

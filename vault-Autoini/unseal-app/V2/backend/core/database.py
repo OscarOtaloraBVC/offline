@@ -1,6 +1,7 @@
+# core/database.py
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean  # ✅ Añadir Boolean
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import Column, Integer, String, DateTime, Text
 import datetime
 import os
 
@@ -28,6 +29,26 @@ class Settings(Base):
     namespace = Column(String(255), default="vault")
     container_name = Column(String(255), default="vault")
     monitor_interval = Column(Integer, default=30)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+class SystemState(Base):
+    """Estado del sistema para gestión de contraseñas temporales"""
+    __tablename__ = "system_state"
+    
+    id = Column(Integer, primary_key=True, default=1)
+    password_changed = Column(Boolean, default=False)  # ✅ Ahora Boolean está importado
+    first_login_done = Column(Boolean, default=False)  # ✅ Ahora Boolean está importado
+    last_password_change = Column(DateTime, default=datetime.datetime.utcnow)
+    password_history = Column(Text, default='[]')  # JSON con hashes anteriores
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+class WorkerPassword(Base):
+    """Contraseña cifrada para el worker (encriptada con secreto del sistema)"""
+    __tablename__ = "worker_password"
+    
+    id = Column(Integer, primary_key=True, default=1)
+    encrypted_password = Column(Text, nullable=False)  # Cifrada con SYSTEM_SECRET
+    salt = Column(Text, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 async def init_db():

@@ -1,4 +1,4 @@
-# backend/api/auth.py
+# api/auth.py
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -7,8 +7,12 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import logging
+from typing import Optional  # ✅ Añadir Optional
 
 from core.crypto import SecureKeyStore
+from core.password_manager import PasswordManager  # ✅ Importar PasswordManager
+from core.database import AsyncSessionLocal, SystemState  # ✅ Importar modelos
+from sqlalchemy import select  # ✅ Importar select
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +116,17 @@ class PasswordUpdateRequest(BaseModel):
     current_password: str
     new_password: str
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+class PasswordStatusResponse(BaseModel):
+    is_temporary: bool
+    must_change: bool
+    days_since_change: Optional[int] = None
+    password_policy: dict
+
 # ============================================
 # ENDPOINTS DE AUTENTICACIÓN
 # ============================================
@@ -153,16 +168,6 @@ async def update_password(
     request: PasswordUpdateRequest,
     user: dict = Depends(get_current_user)
 ):
-    """
-    Actualiza la contraseña del admin y sincroniza con las llaves.
-    
-    Flujo:
-    1. Verificar contraseña actual
-    2. Probar si la nueva contraseña puede descifrar las llaves
-    3. Guardar nuevo hash en BD
-    4. Si las llaves se descifran, actualizar contraseña de unseal
-    5. Si NO se descifran, re-cifrar las llaves con la nueva contraseña
-    """
     global ADMIN_PASSWORD_HASH
     
     current_password = request.current_password[:72] if len(request.current_password) > 72 else request.current_password
@@ -176,49 +181,9 @@ async def update_password(
         )
     
     keystore = SecureKeyStore()
+    pwd_manager = PasswordManager()
     
-    # 2. Probar si la nueva contraseña puede descifrar las llaves
-    keys_decrypted = False
-    keys_count = 0
-    
-    try:
-        existing_keys = keystore.get_keys(current_password)
-        keys_count = len(existing_keys)
-        
-        if existing_keys:
-            # Verificar si la nueva contraseña puede descifrar las llaves
-            try:
-                test_keys = keystore.get_keys(new_password)
-                if test_keys:
-                    keys_decrypted = True
-                    logger.info(f"✅ La nueva contraseña puede descifrar {len(test_keys)} llaves")
-                else:
-                    logger.info("🔄 La nueva contraseña NO puede descifrar las llaves. Re-cifrando...")
-                    # Re-cifrar las llaves con la nueva contraseña
-                    success = keystore.reencrypt_keys(current_password, new_password)
-                    if success:
-                        logger.info("✅ Llaves re-cifradas correctamente con la nueva contraseña")
-                    else:
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error al re-cifrar las llaves con la nueva contraseña"
-                        )
-            except Exception as e:
-                logger.warning(f"⚠️ Error probando nueva contraseña: {e}")
-                # Intentar re-cifrar
-                try:
-                    success = keystore.reencrypt_keys(current_password, new_password)
-                    if success:
-                        logger.info("✅ Llaves re-cifradas correctamente con la nueva contraseña")
-                    else:
-                        logger.error("❌ No se pudieron re-cifrar las llaves")
-                except Exception as reencrypt_error:
-                    logger.error(f"❌ Error re-cifrando llaves: {reencrypt_error}")
-                    # No bloqueamos el cambio, pero advertimos
-    except Exception as e:
-        logger.warning(f"⚠️ No se pudieron obtener llaves para re-cifrar: {e}")
-    
-    # 3. Guardar nuevo hash en BD
+    # 2. Guardar nuevo hash
     new_hash = pwd_context.hash(new_password)
     try:
         keystore.save_admin_password_hash(new_hash)
@@ -231,23 +196,40 @@ async def update_password(
             detail="Error al guardar la nueva contraseña"
         )
     
-    # 4. Sincronizar contraseña de unseal (para el worker)
+    # 3. Marcar contraseña como cambiada
     try:
-        # Verificar que la nueva contraseña funciona
+        await pwd_manager.mark_password_changed()
+        logger.info("✅ Contraseña marcada como cambiada")
+    except Exception as e:
+        logger.error(f"❌ Error marcando contraseña como cambiada: {e}")
+    
+    # 4. Guardar en historial
+    try:
+        await pwd_manager.add_to_password_history(new_hash)
+        logger.info("✅ Contraseña añadida al historial")
+    except Exception as e:
+        logger.error(f"❌ Error añadiendo al historial: {e}")
+    
+    # 5. ✅ SIEMPRE guardar la contraseña del worker (incluso si no hay llaves)
+    try:
+        # Guardar la contraseña en la BD para el worker
+        keystore.save_unseal_password(new_password)
+        logger.info("✅ Contraseña de unseal guardada en BD")
+        
+        # Intentar descifrar llaves con la nueva contraseña
         keys = keystore.get_keys(new_password)
         if keys:
-            keystore.save_unseal_password(new_password)
-            logger.info(f"✅ Contraseña de unseal actualizada. {len(keys)} llaves disponibles")
-            
-            # Actualizar worker
-            from main import monitor_worker
-            if monitor_worker:
-                monitor_worker.set_password(new_password)
-                logger.info("✅ Worker actualizado con nueva contraseña")
+            logger.info(f"✅ {len(keys)} llaves descifradas correctamente con nueva contraseña")
         else:
-            logger.warning("⚠️ La nueva contraseña no puede descifrar llaves. El worker necesitará configuración manual.")
+            logger.warning("⚠️ No se pudieron descifrar llaves con la nueva contraseña (puede que no haya llaves aún)")
+        
+        # Actualizar worker
+        from main import monitor_worker
+        if monitor_worker:
+            monitor_worker.set_password(new_password)
+            logger.info("✅ Worker actualizado con nueva contraseña")
     except Exception as e:
-        logger.error(f"❌ Error sincronizando contraseña de unseal: {e}")
+        logger.error(f"❌ Error sincronizando contraseña del worker: {e}")
         # No bloqueamos el cambio de contraseña
     
     logger.info("✅ Contraseña de admin actualizada correctamente")
@@ -255,6 +237,140 @@ async def update_password(
     return {
         "message": "Contraseña actualizada correctamente",
         "success": True,
-        "keys_available": keys_count > 0,
-        "keys_decrypted": keys_decrypted
+        "keys_available": False,
+        "keys_decrypted": False
     }
+
+@router.get("/auth/password-status", response_model=PasswordStatusResponse)
+async def get_password_status(user: dict = Depends(get_current_user)):
+    """Verifica si la contraseña actual es temporal"""
+    pwd_manager = PasswordManager()
+    is_temp = await pwd_manager.is_temporary_password()
+    
+    async with AsyncSessionLocal() as session:
+        state = await session.execute(
+            select(SystemState).where(SystemState.id == 1)
+        )
+        state = state.scalar_one_or_none()
+        
+        days_since = None
+        if state and state.last_password_change:
+            delta = datetime.utcnow() - state.last_password_change
+            days_since = delta.days
+    
+    return PasswordStatusResponse(
+        is_temporary=is_temp,
+        must_change=is_temp,  # Si es temporal, debe cambiar
+        days_since_change=days_since,
+        password_policy={
+            "min_length": 8,
+            "max_length": 72,
+            "require_uppercase": True,
+            "require_lowercase": True,
+            "require_numbers": True,
+            "require_special": True,
+            "history_count": 5
+        }
+    )
+
+@router.post("/auth/change-password")
+async def change_password(
+    request: PasswordChangeRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Cambia la contraseña del admin con validación completa.
+    Este es el endpoint PRINCIPAL para cambio de contraseña.
+    """
+    try:
+        pwd_manager = PasswordManager()
+        keystore = SecureKeyStore()
+        
+        # 1. Validar contraseña actual
+        current_hash = keystore.get_admin_password_hash()
+        if not verify_password(request.current_password, current_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Contraseña actual incorrecta"
+            )
+        
+        # 2. Validar nueva contraseña
+        is_valid, msg = pwd_manager.validate_password_strength(request.new_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=msg
+            )
+        
+        # 3. Verificar que coinciden
+        if request.new_password != request.confirm_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Las contraseñas no coinciden"
+            )
+        
+        # 4. Verificar que no es igual a la actual
+        if request.new_password == request.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La nueva contraseña debe ser diferente a la actual"
+            )
+        
+        # 5. Verificar historial (no reuso)
+        new_hash = pwd_context.hash(request.new_password)
+        if await pwd_manager.check_password_reuse(new_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Esta contraseña ya fue usada anteriormente"
+            )
+        
+        # 6. RE-CIFRAR TODAS LAS LLAVES
+        logger.info("🔐 Re-cifrando todas las llaves con nueva contraseña...")
+        reencrypt_success = await pwd_manager.reencrypt_all_keys(
+            request.current_password,
+            request.new_password
+        )
+        
+        if not reencrypt_success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error re-cifrando llaves. La contraseña no se cambió."
+            )
+        
+        # 7. Guardar nuevo hash
+        keystore.save_admin_password_hash(new_hash)
+        global ADMIN_PASSWORD_HASH
+        ADMIN_PASSWORD_HASH = new_hash
+        
+        # 8. Marcar como cambiada
+        await pwd_manager.mark_password_changed()
+        
+        # 9. Guardar en historial
+        await pwd_manager.add_to_password_history(new_hash)
+        
+        # 10. Actualizar worker (ya se hizo en reencrypt_all_keys)
+        from main import monitor_worker
+        if monitor_worker:
+            monitor_worker.set_password(request.new_password)
+            logger.info("✅ Worker actualizado con nueva contraseña")
+        
+        # 11. Invalidar tokens antiguos (opcional)
+        # Se podría implementar blacklist de tokens
+        
+        logger.info(f"✅ Contraseña cambiada exitosamente para {user['username']}")
+        
+        return {
+            "success": True,
+            "message": "Contraseña cambiada exitosamente",
+            "keys_reencrypted": True,
+            "temporary_password_reset": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error cambiando contraseña: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno: {str(e)}"
+        )

@@ -6,8 +6,10 @@ import logging
 import os
 
 from api import auth, keys, monitor, settings
+from api.middleware import PasswordChangeMiddleware  # ✅ Importar middleware
 from core.database import init_db
 from core.crypto import SecureKeyStore
+from core.password_manager import PasswordManager  # ✅ Importar PasswordManager
 from worker.monitor_worker import MonitorWorker
 
 logging.basicConfig(
@@ -21,7 +23,6 @@ monitor_worker = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gestiona el ciclo de vida de la aplicación"""
     global monitor_worker
     
     # 1. Inicializar base de datos
@@ -43,6 +44,15 @@ async def lifespan(app: FastAPI):
         monitor_worker = MonitorWorker()
         
         keystore = SecureKeyStore()
+        
+        # Verificar estado de contraseña
+        pwd_manager = PasswordManager()
+        is_temp = await pwd_manager.is_temporary_password()
+        
+        if is_temp:
+            logger.warning("⚠️⚠️⚠️ CONTRASEÑA TEMPORAL DETECTADA ⚠️⚠️⚠️")
+            logger.warning("El usuario admin DEBE cambiar la contraseña en el primer login")
+            logger.warning("La contraseña temporal está configurada en el Secret 'vault-unseal-secrets'")
         
         # Estrategia: Primero intentar con contraseña de unseal de la BD
         unseal_password = keystore.get_unseal_password()
@@ -132,6 +142,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ✅ Añadir middleware de cambio de contraseña
+app.add_middleware(PasswordChangeMiddleware)
 
 # Routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
