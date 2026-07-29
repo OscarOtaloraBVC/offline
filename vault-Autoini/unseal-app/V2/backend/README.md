@@ -1,4 +1,4 @@
-# Vault Unseal Manager – Backend
+# Vault Unseal Manager – Backend - ( BETA )
 
 ## Descripción
 
@@ -162,3 +162,12 @@ El backend está diseñado para ejecutarse como contenedor dentro de Kubernetes:
 - **Persistencia:** requiere un volumen persistente para la base de datos SQLite (`/opt/unseal-app/data`), a fin de conservar las llaves cifradas entre reinicios del pod.
 - **Configuración:** inyectada vía ConfigMap (parámetros generales) y Secret (`SECRET_KEY`, `ADMIN_PASSWORD`, `VAULT_UNSEAL_PASSWORD`).
 - **Permisos RBAC:** el ServiceAccount del pod debe contar con permisos para listar pods y ejecutar comandos (`exec`) sobre los pods de Vault en su namespace.
+
+## Ajustar
+
+- Informacion en Logs.
+- Encripcion de la base de datos.
+
+
+
+

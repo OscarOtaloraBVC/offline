@@ -1,4 +1,4 @@
-# Vault Unseal Automation — Despliegue Kubernetes
+# Vault Unseal Automation — Despliegue Kubernetes - ( BETA )
 
 ## 1. Descripción
 
@@ -67,6 +67,7 @@ Usuario │   │   frontend-    │◄─────────────�
 ```
 
 **Flujo resumido:**
+
 1. El usuario accede al frontend a través del `Service` `vault-unseal-frontend` (puerto 80).
 2. El frontend consume la API del backend usando la variable `BACKEND_URL` (`vault-unseal-backend.vault.svc.cluster.local:8000`).
 3. El backend, autenticado con el `ServiceAccount` `vault-unseal-manager`, consulta el estado de los pods de Vault y ejecuta acciones de remediación (`delete`/`exec`) usando los permisos RBAC definidos en `rbac.yaml`.
@@ -107,6 +108,7 @@ echo -n "<valor-real>" | base64
 ```
 
 Claves a actualizar en `secret.yaml`:
+
 - `jwt-secret`
 - `admin-username`
 - `admin-password`
@@ -116,7 +118,7 @@ Claves a actualizar en `secret.yaml`:
 
 ### 4.3 Ajustar configuración no sensible
 
-Editar `configmap.yaml` según el entorno (dirección de Vault, nivel de log, intervalo de monitoreo, etc. — ver sección [Variables de Entorno](#6-variables-de-entorno--configuración)).
+Editar `configmap.yaml` según el entorno (dirección de Vault, nivel de log, intervalo de monitoreo, etc. — ver sección [Variables de Entorno](#7-variables-de-entorno--configuración)).
 
 ### 4.4 Revisar RBAC
 
@@ -188,7 +190,7 @@ kubernetes/
 ### 7.1 Desde `ConfigMap` (`vault-unseal-config`) — no sensibles
 
 | Variable | Valor por defecto | Descripción |
-|---|---|---|
+| --- | --- | --- |
 | `ALGORITHM` | `HS256` | Algoritmo de firma para los tokens JWT |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `480` | Minutos de expiración del token de acceso |
 | `VAULT_ADDR` | `http://vault.vault:8200` | Endpoint de la API de Vault a monitorear |
@@ -201,7 +203,7 @@ kubernetes/
 ### 7.2 Desde `Secret` (`vault-unseal-secrets`) — sensibles
 
 | Variable | Origen (key) | Requerida | Descripción |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `VAULT_UNSEAL_PASSWORD` | `vault-unseal-password` | Sí | Contraseña usada para descifrar las llaves de unseal (uso del worker) |
 | `SECRET_KEY` | `jwt-secret` | Sí | Clave usada para firmar los tokens JWT |
 | `ADMIN_USERNAME` | `admin-username` | No (default `admin`) | Usuario administrador de la aplicación |

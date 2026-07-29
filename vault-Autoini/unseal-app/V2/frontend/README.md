@@ -1,4 +1,4 @@
-# Vault Unseal Manager - Frontend
+# Vault Unseal Manager - Frontend- ( BETA )
 
 ## Descripción
 
