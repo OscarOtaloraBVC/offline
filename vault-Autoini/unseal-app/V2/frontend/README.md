@@ -116,3 +116,7 @@ Adicionalmente, la aplicación persiste en el navegador (`localStorage`) los sig
 
 - `auth_token`: token JWT de la sesión activa.
 - `auth_user`: datos básicos del usuario autenticado.
+
+## Ajustar
+
+- Integar Workflow Continuos_integration

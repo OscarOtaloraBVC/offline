@@ -167,7 +167,5 @@ El backend está diseñado para ejecutarse como contenedor dentro de Kubernetes:
 
 - Informacion en Logs.
 - Encripcion de la base de datos.
-
-
-
-
+- Pruebas unitarias.
+- Integar Workflow Continuos_integration
