@@ -2,7 +2,7 @@
 
 ## 1. Descripción
 
-Este repositorio contiene los manifiestos Kubernetes (gestionados con **Kustomize**) para el despliegue de la solución de **auto-unseal de HashiCorp Vault**, compuesta por dos componentes:
+Manifiestos de Kubernetes (gestionados con **Kustomize**) (gestionados con **Kustomize**) para el despliegue de la solución de **auto-unseal de HashiCorp Vault**, compuesta por dos componentes:
 
 - **Backend** (`vault-unseal-backend`): API que expone la lógica de automatización del proceso de unseal de Vault. Se autentica ante la API de Kubernetes mediante un `ServiceAccount` con permisos RBAC específicos para monitorear, listar y reiniciar (`delete`/`exec`) los pods de Vault que se encuentren en estado *sealed*.
 - **Frontend** (`vault-unseal-frontend`): interfaz web que consume la API del backend para visualizar el estado del unseal y permitir su operación manual cuando se requiera.

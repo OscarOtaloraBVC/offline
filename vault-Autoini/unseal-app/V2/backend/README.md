@@ -2,7 +2,7 @@
 
 ## Descripción
 
-**Vault Unseal Manager** es un backend desarrollado en **Python** con **FastAPI** que automatiza el proceso de *unseal* (desellado) de instancias de **HashiCorp Vault** desplegadas en **Kubernetes**.
+El backend es una aplicación desarrollada en **Python** con **FastAPI** que automatiza el proceso de *unseal* (desellado) de instancias de **HashiCorp Vault** desplegadas en **Kubernetes**.
 
 El sistema expone una API REST que permite:
 

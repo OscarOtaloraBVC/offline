@@ -2,7 +2,7 @@
 
 ## Descripción
 
-**Vault Unseal Manager Frontend** es una aplicación web desarrollada en **React** que actúa como panel de administración (SPA) para el sistema de auto-unseal de HashiCorp Vault. Permite a los administradores autenticarse, monitorear en tiempo real el estado de sellado (*sealed/unsealed*) de los pods de Vault desplegados en Kubernetes, gestionar las llaves (*unseal keys*) utilizadas para el proceso de desbloqueo, disparar manualmente el proceso de unseal y configurar los parámetros operativos del monitor (threshold, namespace, contenedor, intervalo de monitoreo).
+El frontend es una aplicación web desarrollada en **React** que actúa como panel de administración (SPA) para el sistema de auto-unseal de HashiCorp Vault. Permite a los administradores autenticarse, monitorear en tiempo real el estado de sellado (*sealed/unsealed*) de los pods de Vault desplegados en Kubernetes, gestionar las llaves (*unseal keys*) utilizadas para el proceso de desbloqueo, disparar manualmente el proceso de unseal y configurar los parámetros operativos del monitor (threshold, namespace, contenedor, intervalo de monitoreo).
 
 La aplicación está construida con **Create React App** (`react-scripts`), utiliza **Material UI (MUI)** como sistema de componentes visuales, **React Router** para el enrutamiento, **Axios** para el consumo de la API REST del backend y **React Query** junto con **React Hot Toast** para el manejo de datos remotos y notificaciones. Para producción, la aplicación se empaqueta en una imagen Docker basada en **Nginx**, la cual sirve los assets estáticos y actúa como *reverse proxy* hacia el backend.
 
