@@ -4,18 +4,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 import os
+import uvicorn  # ✅ Añadir import
 
 from api import auth, keys, monitor, settings
-from api.middleware import PasswordChangeMiddleware  # ✅ Importar middleware
+from api.middleware import PasswordChangeMiddleware
 from core.database import init_db
 from core.crypto import SecureKeyStore
-from core.password_manager import PasswordManager  # ✅ Importar PasswordManager
+from core.password_manager import PasswordManager
 from worker.monitor_worker import MonitorWorker
 
+# ✅ Configurar logging para SILENCIAR logs de acceso HTTP
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# ✅ Deshabilitar logs de acceso de Uvicorn
+uvicorn_loggers = ["uvicorn.access", "uvicorn.error"]
+for logger_name in uvicorn_loggers:
+    logger = logging.getLogger(logger_name)
+    logger.handlers = []  # Remover handlers existentes
+    logger.propagate = False  # No propagar a root logger
+
+# ✅ O configurar nivel WARNING para que solo muestre errores
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 monitor_worker = None
