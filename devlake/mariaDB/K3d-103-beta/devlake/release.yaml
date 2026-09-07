@@ -1,0 +1,152 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake-mariadb
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: "1.0.3-beta14" #------> funcional version: "1.0.3-beta14"
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+  values:
+    replicaCount: 1
+    imageTag: v1.0.3-beta14 #------> funcional imageTag: v1.0.3-beta14
+    
+    mysql:
+      useExternal: true
+      externalServer: "devlake-mariadb.devlake-mariadb.svc.cluster.local"
+      externalPort: 3306
+    
+    option:
+      database: mysql
+      connectionSecretName: devlake-db-secret
+      autoCreateSecret: false
+      assembleDbUrl: false
+    
+    lake:
+      encryptionSecret:
+        secretName: encryption-secret
+        autoCreateSecret: false
+      nodeSelector:
+        kubernetes.io/hostname: k3d-vault-cluster-server-0
+      envs:
+
+        DB_URL: "mysql://devlake:DevLakePassword4567@devlake-mariadb.devlake-mariadb.svc.cluster.local:3306/lake?charset=utf8mb4&parseTime=True&loc=UTC"
+
+        AUTO_MIGRATE: "true"
+        LOGGING_LEVEL: "debug"
+        API_TIMEOUT: "120s"
+        API_RETRY: "3"
+        API_REQUESTS_PER_HOUR: "10000"
+        PIPELINE_MAX_PARALLEL: "1"
+        IN_SECURE_SKIP_VERIFY: "false"
+        LOGGING_DIR: "/app/logs"
+      resources:
+        requests:
+          cpu: "200m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Esperando MariaDB en devlake-mariadb.devlake-mariadb.svc.cluster.local:3306..."
+              until nc -z devlake-mariadb.devlake-mariadb.svc.cluster.local 3306; do
+                echo "MariaDB no está disponible, esperando 5s..."
+                sleep 5
+              done
+              echo "✅ MariaDB está lista!"
+    
+    ui:
+      replicaCount: 1
+      image:
+        repository: apache/devlake-config-ui
+        tag: v1.0.3-beta14 #------> funcional tag: v1.0.3-beta14v1.0.3-beta14
+      env:
+        - name: DEVLAKE_ENDPOINT
+          value: "http://devlake-lake:8080"
+        - name: NEXT_PUBLIC_DEVLAKE_ENDPOINT
+          value: "http://devlake-lake:8080"
+        - name: ADMIN_USER
+          value: "admin"
+        - name: ADMIN_PASS
+          value: "admin"
+      config:
+        endpoint: "http://devlake-lake:8080"
+      basicAuth:
+        enabled: true
+        user: admin
+        password: admin
+      service:
+        type: ClusterIP
+        port: 4000
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "200m"
+          memory: "512Mi"
+    
+    grafana:
+      enabled: true
+      image:
+        repository: apache/devlake-dashboard
+        tag: v1.0.3-beta14 #------> funcional tag: v1.0.3-beta14v1.0.3-beta14
+      envFromSecrets:
+        - name: devlake-db-secret
+      envFromConfigMaps:
+        - name: devlake-db-config
+      env:
+        TZ: "UTC"
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+      containerSecurityContext:
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: false
+      resources:
+        requests:
+          cpu: "200m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+      persistence:
+        enabled: true
+        size: 4Gi
+      grafana.ini:
+        server:
+          serve_from_subpath: "true"
+          root_url: "%(protocol)s://%(domain)s/grafana"
+        analytics:
+          check_for_updates: false
+        log:
+          filters: ""
+        database:
+          watch_config_changes: false
+    
+    service:
+      type: NodePort
+      uiPort: 32001
+    
+    ingress:
+      enabled: false
+    
+    alertmanager:
+      enabled: false

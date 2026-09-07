@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apps-keycloak-nuam
+  namespace: keycloak
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http(s)://*.nuam.corp" #"https://*.nuam.corp,https://*.otherdomain.com"
+    #nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    #nginx.ingress.kubernetes.io/cors-allow-credentials: "false"
+    nginx.ingress.kubernetes.io/cors-expose-headers: "*"
+    #cert-manager.io/issuer: "issuer-ingress-keycloak" # TODO, change to cluster-issuer
+    ##external-dns.alpha.kubernetes.io/hostname: keycloak-nuam.nuam.corp
+    
+    ###Importante para permitir uso e keycloak por diferentes host (validar seguridad)
+    #nginx.ingress.kubernetes.io/configuration-snippet: |
+    #  proxy_set_header X-Forwarded-For $proxy_protocol_addr;
+    #  proxy_set_header X-Forwarded-Proto $scheme;
+    #  proxy_set_header X-Forwarded-Host $host;
+    #  add_header Content-Security-Policy "frame-src 'self' https://sso.nuamx.com;";
+
+  labels:
+    app: apps-keycloak
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: keycloak-nuam.nuam.corp # Debe ser un DNS publico que se pueda encontrar desde los pod
+      http:
+        paths:
+          - backend:
+              service:
+                name: keycloak-nuam-service
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+      - keycloak-nuam.nuam.corp
+      secretName: apps-keycloak-nuam-tls

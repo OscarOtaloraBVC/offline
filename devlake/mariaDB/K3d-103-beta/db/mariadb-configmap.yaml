@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-config
+  namespace: devlake-mariadb
+data:
+  custom.cnf: |
+    [mysqld]
+    # --- InnoDB y Memoria ---
+    innodb_buffer_pool_size         = 1G
+    innodb_log_file_size            = 1G
+    innodb_flush_log_at_trx_commit  = 1
+
+    # --- I/O y Concurrencia ---
+    innodb_io_capacity              = 4000
+    innodb_read_io_threads          = 8
+    innodb_write_io_threads         = 8
+    max_connections                 = 500
+
+    # --- Optimización Analítica ---
+    optimizer_switch                = 'index_merge=on'
+    join_buffer_size                = 256M
+    tmp_table_size                  = 256M
+    max_heap_table_size             = 256M
+
+    # --- Observabilidad ---
+    slow_query_log                  = ON
+    long_query_time                 = 1
+    performance_schema              = ON

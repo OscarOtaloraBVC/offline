@@ -1,0 +1,127 @@
+[ {
+  \"id\" : \"2467eaa1-4f19-4183-bdf2-8490f1a7180b\",
+  \"name\" : \"Nuam_S3L\",
+  \"description\" : \"\",
+  \"path\" : \"/Nuam_S3L\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"312ec33c-189c-41ae-ba88-b14bb2ba7ab6\",
+  \"name\" : \"dx_S2L\",
+  \"description\" : \"\",
+  \"path\" : \"/dx_S2L\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"16086ca2-0eae-4d73-9a2b-f7c1e7f5d8ef\",
+  \"name\" : \"dx_S3L\",
+  \"description\" : \"\",
+  \"path\" : \"/dx_S3L\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"3c9a0d92-b69c-45a3-8afb-8c3b7a20972f\",
+  \"name\" : \"dx_developers\",
+  \"description\" : \"\",
+  \"path\" : \"/dx_developers\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"33b83b13-9651-492e-b50f-7874eb48335c\",
+  \"name\" : \"dx_readonly\",
+  \"description\" : \"\",
+  \"path\" : \"/dx_readonly\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"b11d5362-a13b-4913-85f9-52bb9d305d96\",
+  \"name\" : \"dx_testers\",
+  \"description\" : \"\",
+  \"path\" : \"/dx_testers\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"a5c77423-4797-4915-b1f6-ecedd971da20\",
+  \"name\" : \"nuam_admin\",
+  \"description\" : \"\",
+  \"path\" : \"/nuam_admin\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"42564dc8-60e1-499a-b786-04782dac331d\",
+  \"name\" : \"nuam_developers\",
+  \"description\" : \"\",
+  \"path\" : \"/nuam_developers\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+}, {
+  \"id\" : \"c9b67ffb-239a-49e3-8914-f42bbf53c5e2\",
+  \"name\" : \"nuam_testers\",
+  \"description\" : \"\",
+  \"path\" : \"/nuam_testers\",
+  \"subGroupCount\" : 0,
+  \"subGroups\" : [ ],
+  \"access\" : {
+    \"view\" : true,
+    \"viewMembers\" : true,
+    \"manageMembers\" : true,
+    \"manage\" : true,
+    \"manageMembership\" : true
+  }
+} ]

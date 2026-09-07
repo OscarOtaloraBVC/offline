@@ -1,0 +1,22 @@
+{
+  \"id\" : \"cee6fb9a-4c9e-49a8-949e-45a1a48ca193\",
+  \"name\" : \"acr\",
+  \"description\" : \"OpenID Connect scope for add acr (authentication context class reference) to the token\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"false\",
+    \"display.on.consent.screen\" : \"false\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"7599626a-295b-4875-9ae1-454d2a58a908\",
+    \"name\" : \"acr loa level\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-acr-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"id.token.claim\" : \"true\",
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\"
+    }
+  } ]
+}

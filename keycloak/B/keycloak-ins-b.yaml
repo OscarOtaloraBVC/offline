@@ -1,0 +1,146 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak-nuam-b
+  namespace: keycloak-b
+spec:
+  instances: 1
+  scheduling: {}
+  http:
+    httpEnabled: true
+    httpsPort: 8443
+    httpPort: 8080
+  hostname:
+    strict: false
+  ingress:
+    enabled: false
+  db:
+    vendor: postgres
+    database: keycloak-nuam-b
+    host: postgres-cloudnative-kc-pool-b  # Pooler de keycloak-b
+    port: 5432
+    passwordSecret:
+      name: pg-secret-keycloak
+      key: password
+    usernameSecret:
+      name: pg-secret-keycloak
+      key: username
+    poolInitialSize: 4
+    poolMaxSize: 20
+
+  unsupported:
+    podTemplate:
+      spec:
+        initContainers:
+          - name: download-providers
+            image: alpine/curl:latest
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                LOCAL_FILE_PATH="/shared-data"
+                USERNAME="$JFROG_USERNAME"
+                PASSWORD="$JFROG_PASSWORD"
+                JAR_LIST_FILE="/config/jars"
+
+                while IFS= read -r FILE || [ -n "$FILE" ]; do
+                  [ -z "$FILE" ] && continue
+                  TARGET="$LOCAL_FILE_PATH/$FILE"
+                  TMP_TARGET="$TARGET.tmp"
+                  echo "--------------------------------------------------"
+                  echo "Processing JAR: $FILE"
+
+                  if curl -f --connect-timeout 5 --max-time 30 \
+                      -u "$USERNAME:$PASSWORD" \
+                      -o "$TMP_TARGET" \
+                      "$ARTIFACTORY_URL/artifactory/$REPOSITORY_KEY/$REMOTE_FILE_PATH/$FILE"; then
+                    echo "Download successful, using downloaded JAR"
+                    mv "$TMP_TARGET" "$TARGET"
+                  else
+                    echo "WARNING: Download failed for $FILE"
+                    if [ -f "$TARGET" ]; then
+                      echo "Using cached JAR from persistent volume"
+                      rm -f "$TMP_TARGET"
+                    else
+                      echo "WARNING: JAR not available locally, continuing without it"
+                      rm -f "$TMP_TARGET"
+                      continue
+                    fi
+                  fi
+                done < "$JAR_LIST_FILE"
+                echo "Init container finished (soft mode)"
+            env:
+              - name: ARTIFACTORY_URL
+                valueFrom:
+                  configMapKeyRef:
+                    name: keycloak-jar-providers
+                    key: ARTIFACTORY_URL
+              - name: REPOSITORY_KEY
+                valueFrom:
+                  configMapKeyRef:
+                    name: keycloak-jar-providers
+                    key: REPOSITORY_KEY
+              - name: REMOTE_FILE_PATH
+                valueFrom:
+                  configMapKeyRef:
+                    name: keycloak-jar-providers
+                    key: REMOTE_FILE_PATH
+              - name: JFROG_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-credentials
+                    key: username
+              - name: JFROG_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-credentials
+                    key: password
+            volumeMounts:
+              - name: providers-storage
+                mountPath: /shared-data
+              - name: jar-config
+                mountPath: /config
+
+        containers:
+          - name: keycloak
+            startupProbe:
+              failureThreshold: 120
+              httpGet:
+                path: /health/ready
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 10
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /health/ready
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 60
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 10
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /health/ready
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 60
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 10
+            volumeMounts:
+              - name: providers-storage
+                mountPath: /opt/keycloak/providers
+
+        volumes:
+          - name: providers-storage
+            hostPath:
+              path: /opt/keycloak-static-providers-b  # Ruta distinta para keycloak-b
+              type: DirectoryOrCreate
+          - name: jar-config
+            configMap:
+              name: keycloak-jar-providers

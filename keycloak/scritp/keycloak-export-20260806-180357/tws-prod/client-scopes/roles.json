@@ -1,0 +1,50 @@
+{
+  \"id\" : \"cd136265-4295-4884-b6cf-703325e9c011\",
+  \"name\" : \"roles\",
+  \"description\" : \"OpenID Connect scope for add user roles to the access token\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"false\",
+    \"consent.screen.text\" : \"${rolesScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"7bce94a1-1da5-428b-b0c5-397c1f4f65ae\",
+    \"name\" : \"audience resolve\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-audience-resolve-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\"
+    }
+  }, {
+    \"id\" : \"2350ec48-6fb4-4aa3-b808-327ccc76fb40\",
+    \"name\" : \"realm roles\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-realm-role-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"user.attribute\" : \"foo\",
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"realm_access.roles\",
+      \"jsonType.label\" : \"String\",
+      \"multivalued\" : \"true\"
+    }
+  }, {
+    \"id\" : \"c4f219d5-3b8b-4a22-931b-f01aff7f7046\",
+    \"name\" : \"client roles\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-client-role-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"user.attribute\" : \"foo\",
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"resource_access.${client_id}.roles\",
+      \"jsonType.label\" : \"String\",
+      \"multivalued\" : \"true\"
+    }
+  } ]
+}

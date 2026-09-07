@@ -1,0 +1,22 @@
+{
+  \"id\" : \"017f51ca-1efd-4c0a-b9ac-e3cca46d3e32\",
+  \"name\" : \"role_list\",
+  \"description\" : \"SAML role list\",
+  \"protocol\" : \"saml\",
+  \"attributes\" : {
+    \"consent.screen.text\" : \"${samlRoleListScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"5b14a63c-0d33-42c4-9c49-6fae514f41d8\",
+    \"name\" : \"role list\",
+    \"protocol\" : \"saml\",
+    \"protocolMapper\" : \"saml-role-list-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"single\" : \"false\",
+      \"attribute.nameformat\" : \"Basic\",
+      \"attribute.name\" : \"Role\"
+    }
+  } ]
+}

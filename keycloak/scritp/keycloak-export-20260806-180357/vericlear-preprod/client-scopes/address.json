@@ -1,0 +1,30 @@
+{
+  \"id\" : \"187b32bb-5666-4b5d-86d6-0c66b9a9e27b\",
+  \"name\" : \"address\",
+  \"description\" : \"OpenID Connect built-in scope: address\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"true\",
+    \"consent.screen.text\" : \"${addressScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"bb95fe09-e42d-4605-8a0f-421b448ee100\",
+    \"name\" : \"address\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-address-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"user.attribute.formatted\" : \"formatted\",
+      \"user.attribute.country\" : \"country\",
+      \"introspection.token.claim\" : \"true\",
+      \"user.attribute.postal_code\" : \"postal_code\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute.street\" : \"street\",
+      \"id.token.claim\" : \"true\",
+      \"user.attribute.region\" : \"region\",
+      \"access.token.claim\" : \"true\",
+      \"user.attribute.locality\" : \"locality\"
+    }
+  } ]
+}

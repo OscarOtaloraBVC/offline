@@ -1,0 +1,42 @@
+{
+  \"id\" : \"2f158ff3-8fbe-4610-9c3e-334e266934cb\",
+  \"name\" : \"email\",
+  \"description\" : \"OpenID Connect built-in scope: email\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"true\",
+    \"consent.screen.text\" : \"${emailScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"2cf0d9b0-1a41-4711-a6a7-e8791c56d8ae\",
+    \"name\" : \"email verified\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-property-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute\" : \"emailVerified\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"email_verified\",
+      \"jsonType.label\" : \"boolean\"
+    }
+  }, {
+    \"id\" : \"8bb38aba-97c3-4f42-88a1-5e9b265da347\",
+    \"name\" : \"email\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-attribute-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute\" : \"email\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"email\",
+      \"jsonType.label\" : \"String\"
+    }
+  } ]
+}

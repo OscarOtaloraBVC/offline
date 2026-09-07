@@ -1,0 +1,90 @@
+
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: velero-release
+  namespace: velero
+spec:
+  releaseName: velero-ins
+  chart:
+    spec:
+      chart: velero
+      sourceRef:
+        kind: HelmRepository
+        name: vmware-tanzu
+        namespace: flux-system
+      version: "8.0.0" # pin chart version, do not use "greater than" operators
+  install:
+    remediation:
+      retries: -1
+  interval: 24h0m0s
+
+  values:
+    configuration:
+      backupStorageLocation:
+      - name: default
+        provider: aws
+        bucket: velero-keycloak-backup
+        config:
+          region: minio
+          s3ForcePathStyle: "true"
+          s3Url: http://minio-s3.minio-s3.svc:9000
+        credential:
+          name: credentials-velero
+          key: cloud
+      volumeSnapshotLocation:
+      - name: default
+        provider: aws
+        credential:
+          name: credentials-velero
+          key: cloud
+        config: {}
+
+      # to incremental
+      #uploaderType: restic #'restic', 'kopia' (default "kopia")
+
+    initContainers:
+    - name: velero-plugin-for-aws
+      image: velero/velero-plugin-for-aws:v1.10.0
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+    #snapshotsEnabled: false # to incremental
+
+    schedules:
+      keycloakchi1:
+        disabled: false
+        labels:
+          myenv: keycloak-chi
+        annotations:
+          myenv: keycloak-chi
+        schedule: "0 3 * * *"
+        useOwnerReferencesInBackup: false
+        paused: false
+        template:
+          ttl: "240h"
+          storageLocation: default
+          includedNamespaces:
+          - keycloak-chi
+          # See: https://velero.io/docs/v1.14/resource-filtering/#excludes
+          #excludedNamespaceScopedResources:
+          #- persistentVolumeClaims
+          #excludedClusterScopedResources:
+          #- persistentVolumes
+    
+      keycloakchi2:
+        disabled: false
+        labels:
+          myenv: keycloak-chi
+        annotations:
+          myenv: keycloak-chi
+        schedule: "0 23 * * *"
+        useOwnerReferencesInBackup: false
+        paused: false
+        template:
+          ttl: "240h"
+          storageLocation: default
+          includedNamespaces:
+          - keycloak-chi

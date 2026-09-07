@@ -1,0 +1,22 @@
+[ {
+  \"id\" : \"eec6acf9-19ff-44be-996a-cbd0a0c71f49\",
+  \"name\" : \"default-roles-vericlear-preprod\",
+  \"description\" : \"${role_default-roles}\",
+  \"composite\" : true,
+  \"clientRole\" : false,
+  \"containerId\" : \"ebc70b3e-958c-4d61-92da-29e3530001fa\"
+}, {
+  \"id\" : \"fb93994b-ed69-4eab-87a7-498751ad2585\",
+  \"name\" : \"offline_access\",
+  \"description\" : \"${role_offline-access}\",
+  \"composite\" : false,
+  \"clientRole\" : false,
+  \"containerId\" : \"ebc70b3e-958c-4d61-92da-29e3530001fa\"
+}, {
+  \"id\" : \"a03a615f-10b5-4636-a13b-9045cfd8a437\",
+  \"name\" : \"uma_authorization\",
+  \"description\" : \"${role_uma_authorization}\",
+  \"composite\" : false,
+  \"clientRole\" : false,
+  \"containerId\" : \"ebc70b3e-958c-4d61-92da-29e3530001fa\"
+} ]

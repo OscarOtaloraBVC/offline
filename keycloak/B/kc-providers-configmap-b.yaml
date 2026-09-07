@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-jar-providers
+  namespace: keycloak-b
+data:
+  jars: |
+    keycloak-theme-for-kc-all-other-versions.jar
+    nuam-themes-999.0.0-SNAPSHOT.jar
+    keycloak-nuam-themes-1.0.0.jar
+    nuam-keycloak-server-spi-private-1.0.0.jar
+
+  ARTIFACTORY_URL: "https://artifactory.nuamexchange.com"
+  REPOSITORY_KEY: "pantallas-resources"
+  REMOTE_FILE_PATH: "/keycloak-themes"

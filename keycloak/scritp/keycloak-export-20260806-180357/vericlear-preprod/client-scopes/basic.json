@@ -1,0 +1,35 @@
+{
+  \"id\" : \"b3e42d96-daf2-48fe-b8eb-1683ea38216c\",
+  \"name\" : \"basic\",
+  \"description\" : \"OpenID Connect scope for add all basic claims to the token\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"false\",
+    \"display.on.consent.screen\" : \"false\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"64cd8864-7b42-4ccd-beb3-8fb16f90b2b9\",
+    \"name\" : \"auth_time\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usersessionmodel-note-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"user.session.note\" : \"AUTH_TIME\",
+      \"id.token.claim\" : \"true\",
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"auth_time\",
+      \"jsonType.label\" : \"long\"
+    }
+  }, {
+    \"id\" : \"09fd15bd-1e1b-49a3-b3e1-c0ca61e4d7eb\",
+    \"name\" : \"sub\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-sub-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\"
+    }
+  } ]
+}

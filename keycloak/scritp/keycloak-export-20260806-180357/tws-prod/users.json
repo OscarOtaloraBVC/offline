@@ -1,0 +1,401 @@
+[ {
+  \"id\" : \"d36e7069-a7ed-4a12-9e81-65b50804ec3c\",
+  \"username\" : \"alexander.perez@nuam.com\",
+  \"firstName\" : \"Alexander\",
+  \"lastName\" : \"Perez\",
+  \"email\" : \"alexander.perez@nuam.com\",
+  \"emailVerified\" : true,
+  \"userProfileMetadata\" : {
+    \"attributes\" : [ {
+      \"name\" : \"username\",
+      \"displayName\" : \"${username}\",
+      \"required\" : true,
+      \"readOnly\" : true,
+      \"validators\" : {
+        \"username-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true,
+          \"min\" : 3
+        },
+        \"up-username-not-idn-homograph\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"email\",
+      \"displayName\" : \"${email}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        },
+        \"email\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"firstName\",
+      \"displayName\" : \"${firstName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"lastName\",
+      \"displayName\" : \"${lastName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    } ],
+    \"groups\" : [ {
+      \"name\" : \"user-metadata\",
+      \"displayHeader\" : \"User metadata\",
+      \"displayDescription\" : \"Attributes, which refer to user metadata\"
+    } ]
+  },
+  \"enabled\" : true,
+  \"createdTimestamp\" : 1786029407402,
+  \"totp\" : false,
+  \"disableableCredentialTypes\" : [ ],
+  \"requiredActions\" : [ ],
+  \"notBefore\" : 0,
+  \"access\" : {
+    \"manage\" : true
+  }
+}, {
+  \"id\" : \"e645346d-ad0e-4693-91b3-2de86d86d44b\",
+  \"username\" : \"dx-aleksandr-bezverchuk\",
+  \"firstName\" : \"Aleksandr\",
+  \"lastName\" : \"Bezverchuk\",
+  \"email\" : \"abezverchuk@devexperts.con\",
+  \"emailVerified\" : false,
+  \"userProfileMetadata\" : {
+    \"attributes\" : [ {
+      \"name\" : \"username\",
+      \"displayName\" : \"${username}\",
+      \"required\" : true,
+      \"readOnly\" : true,
+      \"validators\" : {
+        \"username-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true,
+          \"min\" : 3
+        },
+        \"up-username-not-idn-homograph\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"email\",
+      \"displayName\" : \"${email}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        },
+        \"email\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"firstName\",
+      \"displayName\" : \"${firstName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"lastName\",
+      \"displayName\" : \"${lastName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    } ],
+    \"groups\" : [ {
+      \"name\" : \"user-metadata\",
+      \"displayHeader\" : \"User metadata\",
+      \"displayDescription\" : \"Attributes, which refer to user metadata\"
+    } ]
+  },
+  \"enabled\" : true,
+  \"createdTimestamp\" : 1786030287953,
+  \"totp\" : false,
+  \"disableableCredentialTypes\" : [ ],
+  \"requiredActions\" : [ ],
+  \"notBefore\" : 0,
+  \"access\" : {
+    \"manage\" : true
+  }
+}, {
+  \"id\" : \"96070479-5c31-46be-bae6-6deb73e08ac0\",
+  \"username\" : \"dx-andrey-shiryaev\",
+  \"firstName\" : \"Andrey\",
+  \"lastName\" : \"Shiryaev\",
+  \"email\" : \"ashiryaev@devexperts.con\",
+  \"emailVerified\" : false,
+  \"userProfileMetadata\" : {
+    \"attributes\" : [ {
+      \"name\" : \"username\",
+      \"displayName\" : \"${username}\",
+      \"required\" : true,
+      \"readOnly\" : true,
+      \"validators\" : {
+        \"username-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true,
+          \"min\" : 3
+        },
+        \"up-username-not-idn-homograph\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"email\",
+      \"displayName\" : \"${email}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        },
+        \"email\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"firstName\",
+      \"displayName\" : \"${firstName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"lastName\",
+      \"displayName\" : \"${lastName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    } ],
+    \"groups\" : [ {
+      \"name\" : \"user-metadata\",
+      \"displayHeader\" : \"User metadata\",
+      \"displayDescription\" : \"Attributes, which refer to user metadata\"
+    } ]
+  },
+  \"enabled\" : true,
+  \"createdTimestamp\" : 1786031067209,
+  \"totp\" : false,
+  \"disableableCredentialTypes\" : [ ],
+  \"requiredActions\" : [ ],
+  \"notBefore\" : 0,
+  \"access\" : {
+    \"manage\" : true
+  }
+}, {
+  \"id\" : \"465eaa70-3475-4473-bfa8-f0c735dda352\",
+  \"username\" : \"dx-eduardas-artemov\",
+  \"firstName\" : \"Eduardas\",
+  \"lastName\" : \"Artemov\",
+  \"email\" : \"eartemov@devexperts.com\",
+  \"emailVerified\" : false,
+  \"userProfileMetadata\" : {
+    \"attributes\" : [ {
+      \"name\" : \"username\",
+      \"displayName\" : \"${username}\",
+      \"required\" : true,
+      \"readOnly\" : true,
+      \"validators\" : {
+        \"username-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true,
+          \"min\" : 3
+        },
+        \"up-username-not-idn-homograph\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"email\",
+      \"displayName\" : \"${email}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        },
+        \"email\" : {
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"firstName\",
+      \"displayName\" : \"${firstName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    }, {
+      \"name\" : \"lastName\",
+      \"displayName\" : \"${lastName}\",
+      \"required\" : false,
+      \"readOnly\" : false,
+      \"validators\" : {
+        \"person-name-prohibited-characters\" : {
+          \"ignore.empty.value\" : true
+        },
+        \"multivalued\" : {
+          \"max\" : \"1\"
+        },
+        \"length\" : {
+          \"max\" : 255,
+          \"ignore.empty.value\" : true
+        }
+      },
+      \"multivalued\" : false
+    } ],
+    \"groups\" : [ {
+      \"name\" : \"user-metadata\",
+      \"displayHeader\" : \"User metadata\",
+      \"displayDescription\" : \"Attributes, which refer to user metadata\"
+    } ]
+  },
+  \"enabled\" : true,
+  \"createdTimestamp\" : 1786031278381,
+  \"totp\" : false,
+  \"disableableCredentialTypes\" : [ ],
+  \"requiredActions\" : [ ],
+  \"notBefore\" : 0,
+  \"access\" : {
+    \"manage\" : true
+  }
+} ]

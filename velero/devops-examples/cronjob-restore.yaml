@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: velero-restore-keycloack-col
+  namespace: velero
+spec:
+  schedule: "0 2 * * *" # Programado para las 02:00 AM diariamente
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: velero-restore
+            image: velero/velero:v1.8.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              velero restore create --from-backup <backup-name>
+          restartPolicy: OnFailure

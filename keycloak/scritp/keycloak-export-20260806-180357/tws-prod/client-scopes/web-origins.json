@@ -1,0 +1,22 @@
+{
+  \"id\" : \"fd02ddf7-3b67-4d65-9902-5da40c29fb36\",
+  \"name\" : \"web-origins\",
+  \"description\" : \"OpenID Connect scope for add allowed web origins to the access token\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"false\",
+    \"consent.screen.text\" : \"\",
+    \"display.on.consent.screen\" : \"false\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"7360c459-6d5d-446c-917e-d997fed9d0c1\",
+    \"name\" : \"allowed web origins\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-allowed-origins-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\"
+    }
+  } ]
+}

@@ -1,0 +1,25 @@
+{
+  "export_info": {
+    "date": "2026-08-06T18:05:06.053849",
+    "namespace": "keycloak",
+    "pod": "keycloak-nuam-0",
+    "user": "ootalora",
+    "server_url": "http://localhost:8080",
+    "excluded_realms": [
+      "master",
+      "nuam"
+    ],
+    "timestamp": 1786057506
+  },
+  "realms": [
+    {
+      "realm": "tws-prod",
+      "enabled": true
+    },
+    {
+      "realm": "vericlear-preprod",
+      "enabled": true
+    }
+  ],
+  "total_realms": 2
+}

@@ -1,0 +1,42 @@
+{
+  \"id\" : \"e86321ce-9cfa-4f89-a907-80a94c3f6374\",
+  \"name\" : \"phone\",
+  \"description\" : \"OpenID Connect built-in scope: phone\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"true\",
+    \"consent.screen.text\" : \"${phoneScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"b681f634-f754-419e-8411-ac1663a78069\",
+    \"name\" : \"phone number verified\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-attribute-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute\" : \"phoneNumberVerified\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"phone_number_verified\",
+      \"jsonType.label\" : \"boolean\"
+    }
+  }, {
+    \"id\" : \"22238d8f-2631-445c-980a-489ee2071e8a\",
+    \"name\" : \"phone number\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-attribute-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute\" : \"phoneNumber\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"phone_number\",
+      \"jsonType.label\" : \"String\"
+    }
+  } ]
+}

@@ -1,0 +1,26 @@
+{
+  \"id\" : \"3a33c77b-2175-4cb2-b0af-f205465a0bb0\",
+  \"name\" : \"organization\",
+  \"description\" : \"Additional claims about the organization a subject belongs to\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"true\",
+    \"consent.screen.text\" : \"${organizationScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"06615ad2-659c-426f-b74a-2bfee3b33667\",
+    \"name\" : \"organization\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-organization-membership-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"id.token.claim\" : \"true\",
+      \"introspection.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"organization\",
+      \"jsonType.label\" : \"String\",
+      \"multivalued\" : \"true\"
+    }
+  } ]
+}

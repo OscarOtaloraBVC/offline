@@ -1,0 +1,65 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero-release
+  namespace: velero
+spec:
+  releaseName: velero-ins
+  chart:
+    spec:
+      chart: velero
+      sourceRef:
+        kind: HelmRepository
+        name: vmware-tanzu
+        namespace: flux-system
+      version: "8.0.0"
+  install:
+    remediation:
+      retries: -1
+  interval: 24h0m0s
+
+  values:
+     # Configuración CRITICA: Especificar imagen de kubectl
+    kubectl:
+      image:
+        repository: bitnamilegacy/kubectl
+        tag: "1.33.4"
+    
+    # Credenciales de AWS
+    credentials:
+      existingSecret: credentials-velero
+    
+    # Configuración Principal
+    configuration:
+      defaultVolumesToFsBackup: true
+      uploaderType: restic
+      
+      backupStorageLocation:
+      - name: default
+        provider: aws
+        bucket: velero-backups-nuam-comunesnuam-preprod
+        config:
+          region: us-east-1
+        credential:
+          name: credentials-velero
+          key: cloud
+
+      volumeSnapshotLocation:
+      - name: default
+        provider: aws
+        credential:
+          name: credentials-velero
+          key: cloud
+        config:
+          region: us-east-1
+
+    # Plugin de AWS
+    initContainers:
+    - name: velero-plugin-for-aws
+      image: velero/velero-plugin-for-aws:v1.13.0
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+    deployNodeAgent: true

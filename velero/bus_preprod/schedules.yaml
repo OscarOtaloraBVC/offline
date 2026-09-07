@@ -1,0 +1,241 @@
+# schedules.yaml - Recursos Schedule de Velero
+# PROGRAMACIÓN DE BACKUPS - AQUÍ SE DEFINEN LOS NAMESPACES
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-apicurio
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "15 0 * * *"  # 00:15 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - apicurio
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-jenkins
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "35 0 * * *"  # 00:35 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - jenkins
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-keycloak
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "55 0 * * *"  # 00:55 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - keycloak
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-postgresql-nuambas
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "15 1 * * *"  # 01:15 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - postgresql-nuambas
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-postgresql-rda
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "35 1 * * *"  # 01:35 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - postgresql-rda
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-postgresql-users
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "55 1 * * *"  # 01:55 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - postgresql-users
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-strimzi-kafka
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "15 2 * * *"  # 02:15 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - strimzi-kafka
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-redis-rda
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "35 2 * * *"  # 02:35 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - redis-rda
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-redis
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "55 2 * * *"  # 02:55 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - redis
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-mme
+  namespace: velero
+  labels:
+    env: preprod
+    schedule: daily
+  annotations:
+    env: preprod
+spec:
+  schedule: "15 3 * * *"  # 03:15 diario
+  template:
+    ttl: "240h"
+    storageLocation: default
+    includedNamespaces:
+    - mme
+    excludedNamespaceScopedResources:
+    - persistentVolumeClaims
+    excludedClusterScopedResources:
+    - persistentVolumes
+  useOwnerReferencesInBackup: false
+  paused: false

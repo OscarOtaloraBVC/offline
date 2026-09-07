@@ -1,0 +1,41 @@
+{
+  \"id\" : \"d512084c-78bb-4697-a10f-1545d8fb602c\",
+  \"name\" : \"microprofile-jwt\",
+  \"description\" : \"Microprofile - JWT built-in scope\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"include.in.token.scope\" : \"true\",
+    \"display.on.consent.screen\" : \"false\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"65880889-b7be-4248-86c7-6a307e7d7c3c\",
+    \"name\" : \"upn\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-attribute-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"userinfo.token.claim\" : \"true\",
+      \"user.attribute\" : \"username\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"upn\",
+      \"jsonType.label\" : \"String\"
+    }
+  }, {
+    \"id\" : \"54c752bf-8dba-4058-a240-2773630a981b\",
+    \"name\" : \"groups\",
+    \"protocol\" : \"openid-connect\",
+    \"protocolMapper\" : \"oidc-usermodel-realm-role-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : {
+      \"introspection.token.claim\" : \"true\",
+      \"multivalued\" : \"true\",
+      \"user.attribute\" : \"foo\",
+      \"id.token.claim\" : \"true\",
+      \"access.token.claim\" : \"true\",
+      \"claim.name\" : \"groups\",
+      \"jsonType.label\" : \"String\"
+    }
+  } ]
+}

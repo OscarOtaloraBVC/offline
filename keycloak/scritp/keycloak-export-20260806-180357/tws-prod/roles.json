@@ -1,0 +1,22 @@
+[ {
+  \"id\" : \"125cc55a-db29-4872-b4cd-908e68ee6454\",
+  \"name\" : \"default-roles-tws-prod\",
+  \"description\" : \"${role_default-roles}\",
+  \"composite\" : true,
+  \"clientRole\" : false,
+  \"containerId\" : \"b5c546d8-2a29-4659-91fc-ea7b5f968165\"
+}, {
+  \"id\" : \"280742c9-2931-487c-8b2c-93cd1429eb11\",
+  \"name\" : \"uma_authorization\",
+  \"description\" : \"${role_uma_authorization}\",
+  \"composite\" : false,
+  \"clientRole\" : false,
+  \"containerId\" : \"b5c546d8-2a29-4659-91fc-ea7b5f968165\"
+}, {
+  \"id\" : \"5e333ba8-f44a-4103-9110-05b1300d4617\",
+  \"name\" : \"offline_access\",
+  \"description\" : \"${role_offline-access}\",
+  \"composite\" : false,
+  \"clientRole\" : false,
+  \"containerId\" : \"b5c546d8-2a29-4659-91fc-ea7b5f968165\"
+} ]

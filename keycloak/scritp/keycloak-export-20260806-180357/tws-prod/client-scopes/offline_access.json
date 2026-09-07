@@ -1,0 +1,10 @@
+{
+  \"id\" : \"827f2e51-662a-4fbf-b8c8-5c5cd68f15ac\",
+  \"name\" : \"offline_access\",
+  \"description\" : \"OpenID Connect built-in scope: offline_access\",
+  \"protocol\" : \"openid-connect\",
+  \"attributes\" : {
+    \"consent.screen.text\" : \"${offlineAccessScopeConsentText}\",
+    \"display.on.consent.screen\" : \"true\"
+  }
+}

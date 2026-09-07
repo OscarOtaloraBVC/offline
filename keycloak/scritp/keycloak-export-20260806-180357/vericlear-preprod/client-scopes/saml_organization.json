@@ -1,0 +1,17 @@
+{
+  \"id\" : \"9290e85a-69f6-43d5-ba07-0e043ebd776c\",
+  \"name\" : \"saml_organization\",
+  \"description\" : \"Organization Membership\",
+  \"protocol\" : \"saml\",
+  \"attributes\" : {
+    \"display.on.consent.screen\" : \"false\"
+  },
+  \"protocolMappers\" : [ {
+    \"id\" : \"5f6f086d-9b6b-4758-af82-4d01ed2288c8\",
+    \"name\" : \"organization\",
+    \"protocol\" : \"saml\",
+    \"protocolMapper\" : \"saml-organization-membership-mapper\",
+    \"consentRequired\" : false,
+    \"config\" : { }
+  } ]
+}

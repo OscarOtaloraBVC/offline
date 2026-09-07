@@ -5,4 +5,4 @@ resources:
   - helmrepo.yaml 
   - secret.yaml
   - release.yaml
-  - ./alerting/alertmanagerconfig_devlake.yaml
+  #- ./alerting/alertmanagerconfig_devlake.yaml
