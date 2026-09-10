@@ -33,8 +33,6 @@ spec:
       encryptionSecret:
         secretName: encryption-secret
         autoCreateSecret: false
-      nodeSelector:
-        kubernetes.io/hostname: k3d-vault-cluster-server-0
       envs:
 
         DB_URL: "mysql://devlake:DevLakePassword4567@devlake-mariadb.devlake-mariadb.svc.cluster.local:3306/lake?charset=utf8mb4&parseTime=True&loc=UTC"

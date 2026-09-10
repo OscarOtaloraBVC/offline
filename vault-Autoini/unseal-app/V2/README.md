@@ -1,7 +1,7 @@
 ## Version:
-Version funcional de aplicaion de unseal sin persistencia.
+Version funcional de aplicaion de unseal con persistencia.
 
-tener en cuenta uqe se compila desde linux
+tener en cuenta que se compila desde linux
 
 find . -type f -exec dos2unix {} +
 
