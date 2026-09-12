@@ -1,0 +1,143 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: devlake
+  namespace: devlake
+spec:
+  releaseName: devlake
+  interval: 10m
+  chart:
+    spec:
+      chart: devlake
+      version: "1.0.3-beta14"
+      sourceRef:
+        kind: HelmRepository
+        name: devlake
+        namespace: flux-system
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: devlake-lake
+            patch: |
+              - op: replace
+                path: /spec/template/spec/initContainers/0/command
+                value:
+                  - sh
+                  - -c
+                  - |
+                    until nc -z -w 2 devlake-mariadb.devlake.svc.cluster.local 3306; do
+                      echo wait for database ready ...
+                      sleep 2
+                    done
+                    echo database is ready
+              - op: replace
+                path: /spec/template/spec/containers/0/image
+                value: "apache/devlake:v1.0.3-beta14"
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MYSQL_SERVER
+                  value: "devlake-mariadb.devlake.svc.cluster.local"
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MYSQL_PORT
+                  value: "3306"
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MYSQL_DATABASE
+                  value: "lake"
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: MYSQL_USER
+                  value: "devlake"
+              - op: add
+                path: /spec/template/spec/containers/0/env/-
+                value:
+                  name: DB_URL
+                  value: "mysql://$(MYSQL_USER):$(MYSQL_PASSWORD)@devlake-mariadb.devlake.svc.cluster.local:3306/lake?charset=utf8mb4&parseTime=True&loc=UTC"
+
+          - target:
+              kind: Deployment
+              name: devlake-grafana
+            patch: |
+              - op: replace
+                path: /spec/template/spec/containers/0/envFrom
+                value:
+                  - secretRef:
+                      name: devlake-mariadb-auth
+              - op: replace
+                path: /spec/template/spec/containers/0/image
+                value: "apache/devlake-dashboard:v1.0.3-beta14"
+
+          - target:
+              kind: Deployment
+              name: devlake-ui
+            patch: |
+              - op: replace
+                path: /spec/template/spec/containers/0/image
+                value: "apache/devlake-config-ui:v1.0.3-beta14"
+
+  values:
+    database:
+      type: mysql
+    mysql:
+      enabled: true
+      useExternal: true
+      externalServer: "devlake-mariadb.devlake.svc.cluster.local"
+      externalPort: 3306
+      existingSecret: devlake-mariadb-auth
+      existingSecretUser: MYSQL_USER
+      existingSecretPassword: MYSQL_PASSWORD
+      existingSecretDatabase: MYSQL_DATABASE
+
+    lake:
+      extraEnvsFromSecret: ""
+      encryptionSecret:
+        secretName: encryption-secret
+        secret: ""
+        autoCreateSecret: false
+
+    grafana:
+      enabled: true
+      envFromSecret: devlake-mariadb-auth
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+            - name: mariadb
+              type: mysql
+              access: proxy
+              url: devlake-mariadb.devlake.svc.cluster.local:3306
+              database: lake
+              user: devlake
+              secureJsonData:
+                password: $__env{MYSQL_PASSWORD}
+              jsonData:
+                tlsAuth: false
+                tlsSkipVerify: false
+                maxOpenConns: 100
+                maxIdleConns: 100
+                connMaxLifetime: 14400
+              isDefault: true
+              editable: false
+
+    service:
+      type: ClusterIP
+
+    ui:
+      basicAuth:
+        autoCreateSecret: false
+        enabled: true
+        existingSecret: devlake-ui-auth
+        existingSecretUser: ADMIN_USER
+        existingSecretPassword: ADMIN_PASS
+
+    ingress:
+      enableHttps: false
+      enabled: false

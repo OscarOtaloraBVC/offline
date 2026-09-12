@@ -1,0 +1,61 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: devlake-route
+  namespace: devlake
+  #annotations:
+    # ExternalDNS leerá esto para actualizar tu zona DNS
+    #external-dns.alpha.kubernetes.io/hostname: devlake.nuamexchange.com
+spec:
+  parentRefs:
+    - name: main-gateway
+      namespace: envoy-gateway-system
+      sectionName: https-devlake
+  hostnames:
+    - devlake.nuamexchange.com
+  rules:
+    # ----------------------------------------------------
+    # Regla 1: Tráfico hacia Grafana (/grafana)
+    # ----------------------------------------------------
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /grafana
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Xss-Protection
+                value: "1"
+              - name: Server
+                value: hide
+      backendRefs:
+        - name: devlake-grafana
+          port: 80
+          
+    # ----------------------------------------------------
+    # Regla 2: Tráfico hacia la UI (Raíz /)
+    # ----------------------------------------------------
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Xss-Protection
+                value: "1"
+              - name: Server
+                value: hide
+      backendRefs:
+        - name: devlake-ui
+          port: 4000
