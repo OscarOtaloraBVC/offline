@@ -1,0 +1,943 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 86,
+  "links": [],
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 16,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "# DORA Metrics (Jira-only) - nuam\n\n**⚠️ Este dashboard usa Jira issues como proxy de deployments**.\n\n### Definiciones aplicadas\n\n| Métrica DORA | Definición en Jira |\n|---|---|\n| **Deployment Frequency** | Issues cerrados (`status=DONE`) con `type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')` |\n| **Lead Time for Changes** | Mediana de `lead_time_minutes` de issues cerrados tipo CAMBIO/TAREA/HISTORIA/MANTENCIÓN |\n| **Change Failure Rate** | Issues `type=ERROR` cerrados / Total issues cerrados tipo cambio |\n| **Failed Deployment Recovery Time** | Mediana de `lead_time_minutes` de issues `type=ERROR` cerrados |\n\n### Fuente de datos\n- Company-managed software Boards en Jira Proyectos\n\n### Notas\n- Los benchmarks DORA (elite/high/medium/low) son **orientativos** porque la fuente no son deployments reales sino tickets.\n- Para DORA \"oficial\" se requiere conectar CI/CD (GitHub Actions).",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.6.2",
+      "title": "📘 Dashboard Introduction",
+      "type": "text"
+    },
+    {
+      "datasource": "mariadb",
+      "description": "Resumen de las 4 métricas DORA calculadas desde Jira",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [],
+          "noValue": "N/A",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _changes AS (\n  SELECT i.id, i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'HISTORIA', 'MANTENCIÓN')\n    AND $__timeFilter(i.resolution_date)\n),\n_all_changes AS (\n  SELECT i.id, i.type\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')\n    AND $__timeFilter(i.resolution_date)\n),\n_errors AS (\n  SELECT i.id, i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type = 'ERROR'\n    AND $__timeFilter(i.resolution_date)\n),\n_clt_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER () - 1, 0) AS ranks\n  FROM _changes WHERE lead_time_minutes IS NOT NULL\n),\n_clt AS (\n  SELECT MAX(lead_time_minutes) AS median_clt FROM _clt_ranks WHERE ranks <= 0.5\n),\n_mttr_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER () - 1, 0) AS ranks\n  FROM _errors WHERE lead_time_minutes IS NOT NULL\n),\n_mttr AS (\n  SELECT MAX(lead_time_minutes) AS median_mttr FROM _mttr_ranks WHERE ranks <= 0.5\n),\n_cfr AS (\n  SELECT COUNT(CASE WHEN type = 'ERROR' THEN 1 END) AS failures, COUNT(*) AS total\n  FROM _all_changes\n),\n_deploy_count AS (\n  SELECT COUNT(DISTINCT id) AS cnt FROM _all_changes\n)\nSELECT 'Deployment Frequency (last 12M)' AS metric, CONCAT(_deploy_count.cnt, ' deployments') AS value FROM _deploy_count\nUNION ALL\nSELECT 'Lead Time for Changes (median)', CASE WHEN _clt.median_clt IS NULL THEN 'N/A' ELSE CONCAT(ROUND(_clt.median_clt / 60, 1), ' hours') END FROM _clt\nUNION ALL\nSELECT 'Change Failure Rate', CASE WHEN _cfr.total = 0 THEN 'N/A' ELSE CONCAT(ROUND(_cfr.failures / _cfr.total * 100, 2), '% (', _cfr.failures, '/', _cfr.total, ')') END FROM _cfr\nUNION ALL\nSELECT 'Failed Deployment Recovery Time (median)', CASE WHEN _mttr.median_mttr IS NULL THEN 'N/A' ELSE CONCAT(ROUND(_mttr.median_mttr / 60, 1), ' hours') END FROM _mttr",
+          "refId": "A"
+        }
+      ],
+      "title": "📊 Overall DORA Metrics",
+      "type": "table"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pattern": ".*elite.*",
+                "result": {
+                  "color": "purple",
+                  "index": 0
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*high.*",
+                "result": {
+                  "color": "green",
+                  "index": 1
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*medium.*",
+                "result": {
+                  "color": "yellow",
+                  "index": 2
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*low.*",
+                "result": {
+                  "color": "red",
+                  "index": 3
+                }
+              },
+              "type": "regex"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 15
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^Deployment Frequency$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _deployments AS (\n  SELECT\n    i.id,\n    DATE_FORMAT(i.resolution_date, '%y/%m') AS month,\n    DATE(i.resolution_date) AS day\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')\n    AND $__timeFilter(i.resolution_date)\n),\n_last_6_months AS (\n  SELECT DISTINCT month\n  FROM _deployments\n  ORDER BY month DESC\n  LIMIT 6\n),\n_monthly AS (\n  SELECT month, COUNT(DISTINCT id) AS cnt\n  FROM _deployments\n  WHERE month IN (SELECT month FROM _last_6_months)\n  GROUP BY month\n)\nSELECT CONCAT(ROUND(AVG(cnt), 1), ' deployments/month (avg last 6M)', CASE WHEN AVG(cnt) >= 30 THEN ' (elite)' WHEN AVG(cnt) >= 8 THEN ' (high)' WHEN AVG(cnt) >= 2 THEN ' (medium)' ELSE ' (low)' END) AS `Deployment Frequency`\nFROM _monthly",
+          "refId": "A"
+        }
+      ],
+      "title": "🚀 Deployment Frequency",
+      "type": "stat"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pattern": ".*elite.*",
+                "result": {
+                  "color": "purple",
+                  "index": 0
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*high.*",
+                "result": {
+                  "color": "green",
+                  "index": 1
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*medium.*",
+                "result": {
+                  "color": "yellow",
+                  "index": 2
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*low.*",
+                "result": {
+                  "color": "red",
+                  "index": 3
+                }
+              },
+              "type": "regex"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 15
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^median_change_lead_time$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _changes AS (\n  SELECT i.id, i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'HISTORIA', 'MANTENCIÓN')\n    AND i.lead_time_minutes IS NOT NULL\n    AND $__timeFilter(i.resolution_date)\n),\n_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER () - 1, 0) AS ranks\n  FROM _changes\n),\n_median AS (\n  SELECT MAX(lead_time_minutes) AS median_clt FROM _ranks WHERE ranks <= 0.5\n)\nSELECT\n  CASE\n    WHEN median_clt IS NULL THEN 'N/A'\n    WHEN median_clt < 24 * 60 THEN CONCAT(ROUND(median_clt/60, 1), ' hours (elite)')\n    WHEN median_clt < 7 * 24 * 60 THEN CONCAT(ROUND(median_clt/60, 1), ' hours (high)')\n    WHEN median_clt < 30 * 24 * 60 THEN CONCAT(ROUND(median_clt/60, 1), ' hours (medium)')\n    ELSE CONCAT(ROUND(median_clt/60, 1), ' hours (low)')\n  END AS median_change_lead_time\nFROM _median",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "⏱️ Median Lead Time",
+      "type": "stat"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pattern": ".*elite.*",
+                "result": {
+                  "color": "purple",
+                  "index": 0
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*high.*",
+                "result": {
+                  "color": "green",
+                  "index": 1
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*medium.*",
+                "result": {
+                  "color": "yellow",
+                  "index": 2
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*low.*",
+                "result": {
+                  "color": "red",
+                  "index": 3
+                }
+              },
+              "type": "regex"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 15
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^change_failure_rate$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _all_changes AS (\n  SELECT i.id, i.type\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')\n    AND $__timeFilter(i.resolution_date)\n),\n_cfr AS (\n  SELECT COUNT(CASE WHEN type = 'ERROR' THEN 1 END) AS failures, COUNT(*) AS total\n  FROM _all_changes\n)\nSELECT\n  CASE\n    WHEN total = 0 THEN 'N/A'\n    WHEN failures / total <= 0.05 THEN CONCAT(ROUND(failures/total*100, 2), '% (elite)')\n    WHEN failures / total <= 0.10 THEN CONCAT(ROUND(failures/total*100, 2), '% (high)')\n    WHEN failures / total <= 0.15 THEN CONCAT(ROUND(failures/total*100, 2), '% (medium)')\n    ELSE CONCAT(ROUND(failures/total*100, 2), '% (low)')\n  END AS change_failure_rate\nFROM _cfr",
+          "refId": "A"
+        }
+      ],
+      "title": "💥 Change Failure Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pattern": ".*elite.*",
+                "result": {
+                  "color": "purple",
+                  "index": 0
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*high.*",
+                "result": {
+                  "color": "green",
+                  "index": 1
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*medium.*",
+                "result": {
+                  "color": "yellow",
+                  "index": 2
+                }
+              },
+              "type": "regex"
+            },
+            {
+              "options": {
+                "pattern": ".*low.*",
+                "result": {
+                  "color": "red",
+                  "index": 3
+                }
+              },
+              "type": "regex"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 15
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^median_recovery_time$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _errors AS (\n  SELECT i.id, i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type = 'ERROR'\n    AND i.lead_time_minutes IS NOT NULL\n    AND $__timeFilter(i.resolution_date)\n),\n_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER () - 1, 0) AS ranks\n  FROM _errors\n),\n_median AS (\n  SELECT MAX(lead_time_minutes) AS median_mttr FROM _ranks WHERE ranks <= 0.5\n)\nSELECT\n  CASE\n    WHEN median_mttr IS NULL THEN 'N/A'\n    WHEN median_mttr < 60 THEN CONCAT(ROUND(median_mttr/60, 1), ' hours (elite)')\n    WHEN median_mttr < 24 * 60 THEN CONCAT(ROUND(median_mttr/60, 1), ' hours (high)')\n    WHEN median_mttr < 7 * 24 * 60 THEN CONCAT(ROUND(median_mttr/60, 1), ' hours (medium)')\n    ELSE CONCAT(ROUND(median_mttr/60, 1), ' hours (low)')\n  END AS median_recovery_time\nFROM _median",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "🔧 Failed Deployment Recovery Time",
+      "type": "stat"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 2,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {},
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  DATE_FORMAT(i.resolution_date, '%y/%m') AS month,\n  COUNT(DISTINCT i.id) AS 'Deployment Count'\nFROM issues i\nJOIN board_issues bi ON bi.issue_id = i.id\nWHERE bi.board_id IN (${board:sqlstring})\n  AND i.status = 'DONE'\n  AND i.resolution_date IS NOT NULL\n  AND i.type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')\n  AND $__timeFilter(i.resolution_date)\nGROUP BY month\nORDER BY month",
+          "refId": "A"
+        }
+      ],
+      "title": "📅 Monthly Deployments (Jira issues cerrados)",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Hours",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 6,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {},
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _changes AS (\n  SELECT\n    DATE_FORMAT(i.resolution_date, '%y/%m') AS month,\n    i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'HISTORIA', 'MANTENCIÓN')\n    AND i.lead_time_minutes IS NOT NULL\n    AND $__timeFilter(i.resolution_date)\n),\n_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (PARTITION BY month ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER (PARTITION BY month) - 1, 0) AS ranks\n  FROM _changes\n),\n_median AS (\n  SELECT month, MAX(lead_time_minutes) AS median_clt\n  FROM _ranks\n  WHERE ranks <= 0.5\n  GROUP BY month\n)\nSELECT month, ROUND(median_clt / 60, 2) AS 'Median Lead Time (hours)'\nFROM _median\nORDER BY month",
+          "refId": "A"
+        }
+      ],
+      "title": "⏱️ Median Lead Time for Changes (by month)",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "id": 5,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {},
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _all_changes AS (\n  SELECT\n    DATE_FORMAT(i.resolution_date, '%y/%m') AS month,\n    i.type\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type IN ('CAMBIO', 'TAREA', 'ERROR', 'HISTORIA', 'MANTENCIÓN')\n    AND $__timeFilter(i.resolution_date)\n)\nSELECT\n  month,\n  COUNT(CASE WHEN type = 'ERROR' THEN 1 END) / NULLIF(COUNT(*), 0) AS 'Change Failure Rate'\nFROM _all_changes\nGROUP BY month\nORDER BY month",
+          "refId": "A"
+        }
+      ],
+      "title": "💥 Change Failure Rate (by month)",
+      "type": "barchart"
+    },
+    {
+      "datasource": "mariadb",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Hours",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 9,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.6,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "text": {},
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.6.2",
+      "targets": [
+        {
+          "datasource": "mariadb",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH _errors AS (\n  SELECT\n    DATE_FORMAT(i.resolution_date, '%y/%m') AS month,\n    i.lead_time_minutes\n  FROM issues i\n  JOIN board_issues bi ON bi.issue_id = i.id\n  WHERE bi.board_id IN (${board:sqlstring})\n    AND i.status = 'DONE'\n    AND i.resolution_date IS NOT NULL\n    AND i.type = 'ERROR'\n    AND i.lead_time_minutes IS NOT NULL\n    AND $__timeFilter(i.resolution_date)\n),\n_ranks AS (\n  SELECT *, (ROW_NUMBER() OVER (PARTITION BY month ORDER BY lead_time_minutes) - 1) / NULLIF(COUNT(*) OVER (PARTITION BY month) - 1, 0) AS ranks\n  FROM _errors\n),\n_median AS (\n  SELECT month, MAX(lead_time_minutes) AS median_mttr\n  FROM _ranks\n  WHERE ranks <= 0.5\n  GROUP BY month\n)\nSELECT month, ROUND(median_mttr / 60, 2) AS 'Median Recovery Time (hours)'\nFROM _median\nORDER BY month",
+          "refId": "A"
+        }
+      ],
+      "title": "🔧 Failed Deployment Recovery Time (by month)",
+      "type": "barchart"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 41,
+  "tags": [
+    "DORA",
+    "Jira",
+    "nuam"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": [
+            "SDC DORA Board (jira:JiraBoard:1:2182)",
+            "All",
+            "PNRVD Scrum Board (jira:JiraBoard:1:5)"
+          ],
+          "value": [
+            "jira:JiraBoard:1:2182",
+            "$__all",
+            "jira:JiraBoard:1:5"
+          ]
+        },
+        "datasource": "mariadb",
+        "definition": "SELECT id AS __value, CONCAT(name, ' (', id, ')') AS __text FROM boards WHERE id LIKE 'jira:JiraBoard%' ORDER BY name",
+        "includeAll": true,
+        "label": "Jira Board",
+        "multi": true,
+        "name": "board",
+        "options": [],
+        "query": "SELECT id AS __value, CONCAT(name, ' (', id, ')') AS __text FROM boards WHERE id LIKE 'jira:JiraBoard%' ORDER BY name",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-12M",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "DORA (Team Jira) - nuam",
+  "uid": "",
+  "version": 3
+}

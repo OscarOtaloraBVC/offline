@@ -1,0 +1,1213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devlake-grafana-dashboard-jira-nuam
+  namespace: devlake
+  labels:
+    app: devlake
+    app.kubernetes.io/instance: devlake
+    app.kubernetes.io/part-of: devlake
+    grafana_dashboard: "1"
+    helm.toolkit.fluxcd.io/name: devlake
+    helm.toolkit.fluxcd.io/namespace: devlake
+    heritage: Helm
+    release: devlake
+  annotations:
+    grafana_folder: "nuam"
+data:
+  Jira-nuam.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "bolt",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Homepage",
+          "tooltip": "",
+          "type": "link",
+          "url": "/grafana/d/Lv1XbLHnk/data-specific-dashboards-homepage"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [
+            "Data Source Specific Dashboard"
+          ],
+          "targetBlank": false,
+          "title": "Metric dashboards",
+          "tooltip": "",
+          "type": "dashboards",
+          "url": ""
+        }
+      ],
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 13,
+            "x": 0,
+            "y": 0
+          },
+          "id": 128,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Jira",
+              "url": "https://devlake.apache.org/docs/Plugins/jira"
+            }
+          ],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "- Use Cases: This dashboard shows the basic project management metrics from Jira.\n- Data Source Required: Jira\n- Database: MariaDB 10.6.28",
+            "mode": "markdown"
+          },
+          "pluginVersion": "11.6.2",
+          "title": "Dashboard Introduction",
+          "type": "text"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 3
+          },
+          "id": 126,
+          "panels": [],
+          "title": "1. Issue Throughput",
+          "type": "row"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "1. Total number of issues created.\n2. The requirements being calculated are filtered by \"requirement creation time\" (time filter at the upper-right corner) and \"Jira board\" (\"Choose Board\" filter at the upper-left corner)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 0,
+            "y": 4
+          },
+          "id": 114,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Count",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementCount"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "editorMode": "code",
+              "format": "table",
+              "group": [],
+              "metricColumn": "none",
+              "queryType": "randomWalk",
+              "rawQuery": true,
+              "rawSql": "SELECT \n  COUNT(DISTINCT i.id) AS value\nFROM issues i\n  JOIN board_issues bi ON i.id = bi.issue_id\nWHERE \n  i.type IN (${type})\n  AND $__timeFilter(i.created_date)\n  AND bi.board_id IN (${board_id})",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              },
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Number of Issues [Issues Created in Selected Time Range]",
+          "type": "stat"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 4,
+            "y": 4
+          },
+          "id": 116,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Count",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementCount"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "editorMode": "code",
+              "format": "table",
+              "group": [],
+              "metricColumn": "none",
+              "queryType": "randomWalk",
+              "rawQuery": true,
+              "rawSql": "SELECT \n  COUNT(DISTINCT i.id) AS value\nFROM issues i\n  JOIN board_issues bi ON i.id = bi.issue_id\nWHERE \n  i.type IN (${type})\n  AND i.status = 'DONE'\n  AND $__timeFilter(i.created_date)\n  AND bi.board_id IN (${board_id})",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              },
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Number of Delivered Issue [Issues Created in Selected Time Range]",
+          "type": "stat"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 1,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 12,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 16,
+            "x": 8,
+            "y": 4
+          },
+          "id": 120,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Count",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementCount"
+            }
+          ],
+          "options": {
+            "legend": {
+              "calcs": [
+                "sum"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "queryType": "randomWalk",
+              "rawQuery": true,
+              "rawSql": "SELECT\n  STR_TO_DATE(DATE_FORMAT(i.created_date, '%Y-%m-01'), '%Y-%m-%d') AS time,\n  COUNT(DISTINCT CASE WHEN i.status != 'DONE' THEN i.id ELSE NULL END) AS 'Number of Open Issues',\n  COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id ELSE NULL END) AS 'Number of Delivered Issues'\nFROM issues i\n  JOIN board_issues bi ON i.id = bi.issue_id\n  JOIN boards b ON bi.board_id = b.id\nWHERE \n  i.type IN (${type})\n  AND $__timeFilter(i.created_date)\n  AND bi.board_id IN (${board_id})\nGROUP BY 1\nORDER BY 1",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Issue Status Distribution over Month [Issues Created in Selected Time Range]",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "Issue Delivery Rate = count(Delivered Issues)/count(Issues)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 50
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 0,
+            "y": 10
+          },
+          "id": 117,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Delivery Rate",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementDeliveryRate"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "queryType": "randomWalk",
+              "rawQuery": true,
+              "rawSql": "WITH _requirements AS (\n  SELECT\n    COUNT(DISTINCT i.id) AS total_count,\n    COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id ELSE NULL END) AS delivered_count\n  FROM issues i\n    JOIN board_issues bi ON i.id = bi.issue_id\n  WHERE \n    i.type IN (${type})\n    AND $__timeFilter(i.created_date)\n    AND bi.board_id IN (${board_id})\n)\n\nSELECT \n  NOW() AS time,\n  CASE \n    WHEN total_count = 0 THEN 0\n    ELSE 1.0 * delivered_count / total_count \n  END AS requirement_delivery_rate\nFROM _requirements",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Issue Delivery Rate [Issues Created in Selected Time Range]",
+          "type": "stat"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "Issue Delivery Rate = count(Delivered Issues)/count(Issues)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Delivery Rate(%)",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 12,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 16,
+            "x": 8,
+            "y": 10
+          },
+          "id": 121,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Delivery Rate",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementDeliveryRate"
+            }
+          ],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "queryType": "randomWalk",
+              "rawQuery": true,
+              "rawSql": "WITH _requirements AS (\n  SELECT\n    STR_TO_DATE(DATE_FORMAT(i.created_date, '%Y-%m-01'), '%Y-%m-%d') AS time,\n    CASE \n      WHEN COUNT(DISTINCT i.id) = 0 THEN 0\n      ELSE 1.0 * COUNT(DISTINCT CASE WHEN i.status = 'DONE' THEN i.id ELSE NULL END) / COUNT(DISTINCT i.id)\n    END AS delivered_rate\n  FROM issues i\n    JOIN board_issues bi ON i.id = bi.issue_id\n  WHERE \n    i.type IN (${type})\n    AND $__timeFilter(i.created_date)\n    AND bi.board_id IN (${board_id})\n  GROUP BY 1\n)\n\nSELECT\n  time,\n  delivered_rate\nFROM _requirements\nORDER BY time",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "value"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "timeColumn": "time",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Issue Delivery Rate over Time [Issues Created in Selected Time Range]",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "id": 110,
+          "panels": [],
+          "title": "2. Issue Lead Time",
+          "type": "row"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 1,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 14
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 0,
+            "y": 17
+          },
+          "id": 12,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Lead Time",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementLeadTime"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "fields": "/^value$/",
+              "values": false
+            },
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "editorMode": "code",
+              "format": "table",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": true,
+              "rawSql": "SELECT \n  AVG(i.lead_time_minutes / 1440) AS value\nFROM issues i\n  JOIN board_issues bi ON i.id = bi.issue_id\nWHERE \n  i.type IN (${type})\n  AND i.status = 'DONE'\n  AND $__timeFilter(i.resolution_date)\n  AND bi.board_id IN (${board_id})",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "progress"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              },
+              "table": "ca_analysis",
+              "timeColumn": "create_time",
+              "timeColumnType": "timestamp",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Mean Issue Lead Time in Days [Issues Resolved in Select Time Range]",
+          "type": "stat"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 21
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 4,
+            "y": 17
+          },
+          "id": 13,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Delivery Rate",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementDeliveryRate"
+            }
+          ],
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "format": "table",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": true,
+              "rawSql": "WITH _ranks AS (\n  SELECT \n    i.lead_time_minutes,\n    PERCENT_RANK() OVER (ORDER BY i.lead_time_minutes ASC) AS ranks\n  FROM issues i\n    JOIN board_issues bi ON i.id = bi.issue_id\n  WHERE \n    i.type IN (${type})\n    AND i.status = 'DONE'\n    AND $__timeFilter(i.resolution_date)\n    AND bi.board_id IN (${board_id})\n)\n\nSELECT\n  MAX(lead_time_minutes / 1440) AS value\nFROM _ranks\nWHERE \n  ranks <= 0.8",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "progress"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "table": "ca_analysis",
+              "timeColumn": "create_time",
+              "timeColumnType": "timestamp",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "80% Issues' Lead Time are less than # days [Issues Resolved in Select Time Range]",
+          "type": "stat"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Lead Time(days)",
+                "axisPlacement": "auto",
+                "axisSoftMin": 0,
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 16,
+            "x": 8,
+            "y": 17
+          },
+          "id": 17,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Delivery Rate",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementDeliveryRate"
+            }
+          ],
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.5,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
+            "text": {
+              "valueSize": 12
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "format": "table",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": true,
+              "rawSql": "WITH _requirements AS (\n  SELECT \n    STR_TO_DATE(DATE_FORMAT(i.resolution_date, '%Y-%m-01'), '%Y-%m-%d') AS time,\n    AVG(i.lead_time_minutes / 1440) AS mean_lead_time\n  FROM issues i\n    JOIN board_issues bi ON i.id = bi.issue_id\n  WHERE \n    i.type IN (${type})\n    AND i.status = 'DONE'\n    AND $__timeFilter(i.resolution_date)\n    AND bi.board_id IN (${board_id})\n  GROUP BY 1\n)\n\nSELECT \n  DATE_FORMAT(time, '%M %Y') AS month,\n  mean_lead_time\nFROM _requirements\nORDER BY time ASC",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "progress"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "table": "ca_analysis",
+              "timeColumn": "create_time",
+              "timeColumnType": "timestamp",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Mean Issue Lead Time [Issues Resolved in Select Time Range]",
+          "type": "barchart"
+        },
+        {
+          "datasource": "mariadb",
+          "description": "1. The cumulative distribution of requirement lead time. \n2. Each point refers to the percent rank of a lead time.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "id": 15,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Requirement Delivery Rate",
+              "url": "https://devlake.apache.org/docs/Metrics/RequirementDeliveryRate"
+            }
+          ],
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.51,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 100
+          },
+          "pluginVersion": "11.6.2",
+          "targets": [
+            {
+              "datasource": "mariadb",
+              "editorMode": "code",
+              "format": "time_series",
+              "group": [],
+              "metricColumn": "none",
+              "rawQuery": true,
+              "rawSql": "WITH _ranks AS (\n  SELECT \n    ROUND(i.lead_time_minutes / 1440) AS lead_time_day\n  FROM issues i\n    JOIN board_issues bi ON i.id = bi.issue_id\n  WHERE \n    i.type IN (${type})\n    AND i.status = 'DONE'\n    AND $__timeFilter(i.resolution_date)\n    AND bi.board_id IN (${board_id})\n  ORDER BY lead_time_day ASC\n)\n\nSELECT \n  NOW() AS time,\n  LPAD(CONCAT(lead_time_day, 'd'), 4, ' ') AS metric,\n  PERCENT_RANK() OVER (ORDER BY lead_time_day ASC) AS value\nFROM _ranks\nORDER BY lead_time_day ASC",
+              "refId": "A",
+              "select": [
+                [
+                  {
+                    "params": [
+                      "progress"
+                    ],
+                    "type": "column"
+                  }
+                ]
+              ],
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              },
+              "table": "ca_analysis",
+              "timeColumn": "create_time",
+              "timeColumnType": "timestamp",
+              "where": [
+                {
+                  "name": "$__timeFilter",
+                  "params": [],
+                  "type": "macro"
+                }
+              ]
+            }
+          ],
+          "title": "Cumulative Distribution of Requirement Lead Time [Issues Resolved in Select Time Range]",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "reducers": [
+                  "current"
+                ]
+              }
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 29
+          },
+          "id": 130,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<br/>\n\nThis dashboard is created based on this [data schema](https://devlake.apache.org/docs/DataModels/DevLakeDomainLayerSchema). Want to add more metrics? Please follow the [guide](https://devlake.apache.org/docs/Configuration/Dashboards/GrafanaUserGuide).",
+            "mode": "markdown"
+          },
+          "pluginVersion": "11.6.2",
+          "title": "",
+          "type": "text"
+        }
+      ],
+      "preload": false,
+      "refresh": "",
+      "schemaVersion": 41,
+      "tags": [
+        "Data Source Dashboard"
+      ],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": "mariadb",
+            "definition": "SELECT CONCAT(name, '--', id) FROM boards WHERE id LIKE 'jira%'",
+            "includeAll": true,
+            "label": "Choose Board",
+            "multi": true,
+            "name": "board_id",
+            "options": [],
+            "query": "SELECT CONCAT(name, '--', id) FROM boards WHERE id LIKE 'jira%'",
+            "refresh": 1,
+            "regex": "/^(?<text>.*)--(?<value>.*)$/",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": "All",
+              "value": "$__all"
+            },
+            "datasource": "mariadb",
+            "definition": "SELECT DISTINCT type FROM issues",
+            "includeAll": true,
+            "label": "Issue Type",
+            "name": "type",
+            "options": [],
+            "query": "SELECT DISTINCT type FROM issues",
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6M",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "utc",
+      "title": "Jira - nuam",
+      "uid": "",
+      "version": 1
+    }

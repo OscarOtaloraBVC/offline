@@ -18,13 +18,13 @@ spec:
       - name: mariadb
         image: mariadb:10.6
         # --- Ajuste Recusros Base de datos.
-        resources:
-          requests:
-            cpu: "1000m"      # Reserva 1 núcleo completo para la DB
-            memory: "6Gi"     # Reserva suficiente para el buffer pool y logs
-          limits:
-            cpu: "2000m"      # Permite escalar hasta 2 núcleos si es necesario
-            memory: "10Gi"    # Límite superior para evitar reinicios por OOM
+        # resources:
+        #   requests:
+        #     cpu: "1000m"      # Reserva 1 núcleo completo para la DB
+        #     memory: "6Gi"     # Reserva suficiente para el buffer pool y logs
+        #   limits:
+        #     cpu: "2000m"      # Permite escalar hasta 2 núcleos si es necesario
+        #     memory: "10Gi"    # Límite superior para evitar reinicios por OOM
         # -------------------------------
         # --- Ajuste Definicion de caracteres de Base de datos.
         args:

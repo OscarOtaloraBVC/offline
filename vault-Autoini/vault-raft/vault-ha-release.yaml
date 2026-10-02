@@ -31,7 +31,8 @@ spec:
       enabled: true
       image:
         repository: hashicorp/vault
-        tag: "1.17.3"
+        tag: "2.1.1"
+        #tag: "1.17.3"
       
       serviceAccount:
         create: true

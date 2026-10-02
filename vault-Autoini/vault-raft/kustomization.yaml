@@ -3,6 +3,6 @@ kind: Kustomization
 namespace: vault
 
 resources:
-  - namespace.yaml
   - vault-repo.yaml
+  - namespace.yaml
   - vault-ha-release.yaml
