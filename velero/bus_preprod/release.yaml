@@ -19,7 +19,7 @@ spec:
   interval: 24h0m0s
 
   values:
-     # Configuración CRITICA: Especificar imagen de kubectl
+    # Configuración CRITICA: Especificar imagen de kubectl
     kubectl:
       image:
         repository: bitnamilegacy/kubectl
