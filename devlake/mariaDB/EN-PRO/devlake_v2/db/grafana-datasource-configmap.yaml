@@ -14,7 +14,7 @@ data:
         access: proxy
         url: devlake-mariadb.devlake.svc.cluster.local:3306
         database: lake
-        user: ${MYSQL_USER}
+        user: ${MARIADB_USER}
         isDefault: true
         editable: false
         jsonData:
@@ -22,4 +22,4 @@ data:
           maxIdleConns: 5
           connMaxLifetime: 14400
         secureJsonData:
-          password: ${MYSQL_PASSWORD}
+          password: ${MARIADB_PASSWORD}
