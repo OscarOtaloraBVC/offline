@@ -26,7 +26,6 @@ spec:
     option:
       database: mysql
       connectionSecretName: devlake-db-secret
-      #connectionConfigmapName: devlake-db-config-custom
       autoCreateSecret: false
       assembleDbUrl: false 
     
