@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource-mariadb
+  namespace: devlake
+data:
+  mariadb.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: mariadb
+        type: mysql
+        access: proxy
+        url: devlake-mariadb.devlake.svc.cluster.local:3306
+        database: lake
+        user: ${MYSQL_USER}
+        isDefault: true
+        editable: false
+        secureJsonData:
+          password: ${MYSQL_PASSWORD}

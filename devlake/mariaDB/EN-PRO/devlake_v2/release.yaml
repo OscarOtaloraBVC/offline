@@ -108,8 +108,18 @@ spec:
         tag: v1.0.3-beta14 
       envFromSecrets:
         - name: devlake-db-secret
-      envFromConfigMaps:
-        - name: devlake-db-config-custom
+      extraVolumes:
+        - name: grafana-datasource-mariadb
+          configMap:
+            name: grafana-datasource-mariadb
+      extraVolumeMounts:
+        - name: grafana-datasource-mariadb
+          mountPath: /etc/grafana/provisioning/datasources/mariadb.yaml
+          subPath: mariadb.yaml
+          readOnly: true
+
+
+
       env:
         TZ: "UTC"
       securityContext:
