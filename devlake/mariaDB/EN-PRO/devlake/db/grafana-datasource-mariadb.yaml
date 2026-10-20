@@ -12,8 +12,8 @@ data:
         access: proxy
         url: devlake-mariadb.devlake.svc.cluster.local:3306
         database: lake
-        user: ${MYSQL_USER}
+        user: devlake
         isDefault: true
         editable: false
         secureJsonData:
-          password: ${MYSQL_PASSWORD}
+          password: 6b88e1e961365ca1497e

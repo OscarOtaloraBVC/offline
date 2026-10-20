@@ -7,21 +7,27 @@ Este repositorio contiene los manifiestos de Kubernetes y la configuración GitO
 ## 🏗️ Estructura del Proyecto
 
 ```text
-📂 103-beta-prd/
-├── alerting/
-│   └── alertmanagerconfig_devlake.yaml  # Configuración de alertas para Alertmanager (Teams / Email)
-├── db/
-│   ├── mariadb-configmap.yaml           # Parámetros de rendimiento e InnoDB para MariaDB
-│   ├── mariadb-external-secret.yaml    # ⚠️ CONFIGURACIÓN ANTERIOR (ExternalSecret / Vault) - NO EN USO
-│   ├── mariadb-secret.yaml             # Secretos y ConfigMaps locales activos para la base de datos y UI
-│   ├── mariadb-service.yaml            # Servicio interno ClusterIP para MariaDB (puerto 3306)
-│   └── mariadb-statefulset.yaml        # StatefulSet para MariaDB (10.6) con PVC de 10Gi
-├── gw-route-http.yaml                   # HTTPRoute (Gateway API) para enrutar `/` (UI) y `/grafana`
-├── gw-route-http-redir.yaml             # HTTPRoute para redirección HTTP -> HTTPS (301)
-├── helmrepo.yaml                        # Repositorio Helm oficial de Apache DevLake
-├── kustomization.yaml                   # Manifiesto principal de Kustomize
-├── namespace.yaml                       # Definición del Namespace `devlake`
-└── release.yaml                         # HelmRelease de Flux CD (DevLake, UI, Grafana)
+📂 devlake/
+├── 📁 alerting
+│   └── ⚙️ alertmanagerconfig_devlake.yaml
+├── 📁 dashboads
+│   ├── ⚙️ DORA (Team Jira) - nuam.json
+│   ├── ⚙️ GitHub-nuam.json
+│   ├── ⚙️ Jira-nuam.json
+│   └── ⚙️ devlake-grafana-dashboard-jira-nuam.yaml
+├── 📁 db
+│   ├── ⚙️ grafana-datasource-mariadb.yaml
+│   ├── ⚙️ mariadb-configmap.yaml
+│   ├── ⚙️ mariadb-external-secret.yaml
+│   ├── ⚙️ mariadb-secret.yaml
+│   ├── ⚙️ mariadb-service.yaml
+│   └── ⚙️ mariadb-statefulset.yaml
+├── 📝 README.md
+├── ⚙️ gw-route-http-redir.yaml
+├── ⚙️ gw-route-http.yaml
+├── ⚙️ kustomization.yaml
+├── ⚙️ namespace.yaml
+└── ⚙️ release.yaml
 ```
 
 ---

@@ -26,6 +26,7 @@ spec:
     option:
       database: mysql
       connectionSecretName: devlake-db-secret
+      #connectionConfigmapName: devlake-db-config-custom
       autoCreateSecret: false
       assembleDbUrl: false 
     
@@ -107,8 +108,18 @@ spec:
         tag: v1.0.3-beta14 
       envFromSecrets:
         - name: devlake-db-secret
-      envFromConfigMaps:
-        - name: devlake-db-config
+      extraVolumes:
+        - name: grafana-datasource-mariadb
+          configMap:
+            name: grafana-datasource-mariadb
+      extraVolumeMounts:
+        - name: grafana-datasource-mariadb
+          mountPath: /etc/grafana/provisioning/datasources/mariadb.yaml
+          subPath: mariadb.yaml
+          readOnly: true
+
+
+
       env:
         TZ: "UTC"
       securityContext:
@@ -140,7 +151,16 @@ spec:
           filters: ""
         database:
           watch_config_changes: false
-    
+
+      sidecar:
+        dashboards:
+          enabled: true
+          label: grafana_dashboard
+          labelValue: "1"
+          folderAnnotation: grafana_folder
+          provider:
+            foldersFromFilesStructure: true
+      
     service:
       type: NodePort
       uiPort: 32001
