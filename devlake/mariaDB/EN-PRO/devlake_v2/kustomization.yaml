@@ -7,7 +7,6 @@ resources:
   - db/mariadb-service.yaml
   - db/mariadb-statefulset.yaml
   - db/mariadb-secret.yaml
-  - db/grafana-datasource-configmap.yaml
   #- ./alerting/alertmanagerconfig_devlake.yaml
   #- gw-route-http.yaml
   #- gw-route-http-redir.yaml

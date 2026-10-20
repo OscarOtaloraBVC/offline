@@ -141,17 +141,6 @@ spec:
         database:
           watch_config_changes: false
       
-      extraVolumes:
-        - name: grafana-datasource-mariadb
-          configMap:
-            name: grafana-datasource-mariadb
-
-      extraVolumeMounts:
-        - name: grafana-datasource-mariadb
-          mountPath: /etc/grafana/provisioning/datasources/mariadb.yaml
-          subPath: mariadb.yaml
-          readOnly: true
-    
     service:
       type: NodePort
       uiPort: 32001
