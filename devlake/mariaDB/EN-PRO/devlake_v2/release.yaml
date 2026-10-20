@@ -26,6 +26,7 @@ spec:
     option:
       database: mysql
       connectionSecretName: devlake-db-secret
+      connectionConfigmapName: devlake-db-config-custom
       autoCreateSecret: false
       assembleDbUrl: false 
     
@@ -108,7 +109,7 @@ spec:
       envFromSecrets:
         - name: devlake-db-secret
       envFromConfigMaps:
-        - name: devlake-db-config
+        - name: devlake-db-config-custom
       env:
         TZ: "UTC"
       securityContext:
