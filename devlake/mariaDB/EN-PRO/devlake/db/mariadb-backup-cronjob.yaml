@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mariadb-db-backup
+  namespace: devlake
+spec:
+  # Ejecutar todos los sábados a las 2:00 AM
+  schedule: "0 2 * * 6"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: mcr.microsoft.com/azure-cli:latest # Imagen que incluye az cli y herramientas base
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e # Detener ejecución si hay error
+              
+              # 1.Variables
+              FECHA=$(date +"%d-%m-%Y")
+              NOMBRE_ARCHIVO="devlake_backup_${FECHA}.sql"
+              ARCHIVO_COMPRIMIDO="${NOMBRE_ARCHIVO}.gz"
+              
+              # 2. Generar Backup
+              echo "Iniciando backup de la base de datos lake..."
+              # mariadb-dump ya que la imagen base es MariaDB 10.6
+              # --single-transaction evita bloquear tablas InnoDB durante el dump
+              mariadb-dump -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" \
+                --single-transaction --routines --triggers "${DB_NAME}" > "/tmp/${NOMBRE_ARCHIVO}"
+              
+              # 3. Comprimir archivo
+              gzip "/tmp/${NOMBRE_ARCHIVO}"
+              
+              # 4. Subir a Azure Blob Storage
+              echo "Subiendo ${ARCHIVO_COMPRIMIDO} a Azure..."
+              az storage blob upload \
+                --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" \
+                --container-name "${AZURE_CONTAINER_NAME}" \
+                --name "Devlake/${ARCHIVO_COMPRIMIDO}" \
+                --file "/tmp/${ARCHIVO_COMPRIMIDO}" \
+                --overwrite
+              
+              # 5. Retención: Dejar solo los 2 últimos archivos
+              echo "Aplicando política de retención (dejando 2 archivos)..."
+              
+              # Obtener lista de archivos (Nota el prefijo "Devlake/devlake_backup_")
+              ARCHIVOS_A_BORRAR=$(az storage blob list \
+                --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" \
+                --container-name "${AZURE_CONTAINER_NAME}" \
+                --prefix "Devlake/devlake_backup_" \
+                --query "[].name" -o tsv | sort | head -n -2)
+              
+              # Borrar los archivos sobrantes
+              if [ -n "${ARCHIVOS_A_BORRAR}" ]; then
+                for ARCHIVO in ${ARCHIVOS_A_BORRAR}; do
+                  echo "Borrando archivo antiguo: ${ARCHIVO}"
+                  az storage blob delete \
+                    --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" \
+                    --container-name "${AZURE_CONTAINER_NAME}" \
+                    --name "${ARCHIVO}"
+                done
+              else
+                echo "No hay archivos antiguos para borrar (hay 2 o menos)."
+              fi
+              
+              echo "Backup completado exitosamente."
+            env:
+            - name: DB_HOST
+              value: "devlake-mariadb.devlake.svc.cluster.local"
+            - name: DB_NAME
+              value: "lake"
+            - name: DB_USER
+              value: "devlake"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-auth
+                  key: mariadb-password 
+            # Variables de Azure
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: azure-backup-secret
+                  key: connection-string
+            - name: AZURE_CONTAINER_NAME
+              value: "db-backups-prod" # Cambia por el nombre real de tu contenedor

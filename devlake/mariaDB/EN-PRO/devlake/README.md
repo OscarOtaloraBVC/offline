@@ -7,15 +7,15 @@ Este repositorio contiene los manifiestos de Kubernetes y la configuración GitO
 ## 🏗️ Estructura del Proyecto
 
 ```text
-📂 devlake/
 ├── 📁 alerting
 │   └── ⚙️ alertmanagerconfig_devlake.yaml
-├── 📁 dashboads
+├── 📁 dashboards
 │   ├── ⚙️ DORA (Team Jira) - nuam.json
 │   ├── ⚙️ GitHub-nuam.json
 │   ├── ⚙️ Jira-nuam.json
 │   └── ⚙️ devlake-grafana-dashboard-jira-nuam.yaml
 ├── 📁 db
+│   ├── ⚙️ mariadb-backup-cronjob.yaml
 │   ├── ⚙️ grafana-datasource-mariadb.yaml
 │   ├── ⚙️ mariadb-configmap.yaml
 │   ├── ⚙️ mariadb-external-secret.yaml
@@ -66,6 +66,24 @@ Este repositorio contiene los manifiestos de Kubernetes y la configuración GitO
 
 4. **Alertamiento (Opcional / Integración):**
    - Contiene `AlertmanagerConfig` para enrutamiento de alertas severas (Critical ➡️ Teams & Email; Warning ➡️ Email; Info ➡️ Teams).
+
+5. **Backup de Base de Datos (CronJob):**
+
+- Manifiesto: db/devlake-backup-cronjob.yaml
+- Schedule: 0 2 * * 6 (todos los sábados a las 2:00 AM).
+- Imagen: mcr.microsoft.com/azure-cli:latest
+
+Flujo:
+
+   1. mariadb-dump con --single-transaction --routines --triggers sobre la base lake.
+   2. Compresión gzip del dump (devlake_backup_DD-MM-YYYY.sql.gz).
+   3. Upload a Azure Blob Storage (db-backups-prod) bajo el prefijo Devlake/.
+   4. Retención: Conserva únicamente los 2 archivos más recientes.
+
+Secretos requeridos:
+
+- mariadb-auth → key mariadb-password
+- azure-backup-secret → key connection-string
 
 ---
 
