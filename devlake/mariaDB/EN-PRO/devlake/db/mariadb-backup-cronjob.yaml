@@ -20,17 +20,19 @@ spec:
             - /bin/bash
             - -c
             - |
-              set -e # Detener ejecución si hay error
+              set -e
               
-              # 1.Variables
+              # 0. Instalar cliente de MariaDB usando apk (Alpine)
+              echo "Instalando cliente de MariaDB..."
+              tdnf install -y mariadb
+
+              # 1. Variables
               FECHA=$(date +"%d-%m-%Y")
               NOMBRE_ARCHIVO="devlake_backup_${FECHA}.sql"
               ARCHIVO_COMPRIMIDO="${NOMBRE_ARCHIVO}.gz"
               
               # 2. Generar Backup
               echo "Iniciando backup de la base de datos lake..."
-              # mariadb-dump ya que la imagen base es MariaDB 10.6
-              # --single-transaction evita bloquear tablas InnoDB durante el dump
               mariadb-dump -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" \
                 --single-transaction --routines --triggers "${DB_NAME}" > "/tmp/${NOMBRE_ARCHIVO}"
               
