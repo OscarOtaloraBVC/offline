@@ -1,0 +1,44 @@
+# devlake-sync-cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: devlake-jira-sync
+  namespace: devlake
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: sync-job
+            image: python:3.11-slim
+            workingDir: /app
+            envFrom:
+            - secretRef:
+                name: devlake-sync-secret
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "Instalando dependencias de Python..."
+              pip install --quiet requests
+              echo "Ejecutando script de extracción y carga..."
+              python /scripts/extract_and_transform_gdd.py
+              echo "✅ Job finalizado."
+            volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+            - name: workdir
+              mountPath: /app
+          volumes:
+          - name: script-volume
+            configMap:
+              name: devlake-sync-script-gdd
+          - name: workdir
+            emptyDir: {}
